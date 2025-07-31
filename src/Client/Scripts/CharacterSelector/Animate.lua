@@ -165,7 +165,9 @@ function Module.SelectAnimations(characterName: string): ()
 end
 
 --// EVENTS
-CharacterController.Loaded:Connect(function(_, humanoid: Humanoid)
+CharacterController.CharacterAdded:Connect(function()
+	local humanoid: Humanoid = CharacterController.Humanoid
+
 	animationTracks = AnimationsStorage.GetTracks("Default")
 
 	humanoid.GettingUp:Connect(function()
@@ -233,7 +235,7 @@ CharacterController.Loaded:Connect(function(_, humanoid: Humanoid)
 	end
 end)
 
-CharacterController.Died:Connect(function()
+CharacterController.CharacterRemoving:Connect(function()
 	animationTracks = nil
 end)
 

@@ -15,16 +15,16 @@ local player: Player = Players.LocalPlayer
 
 local charactersFolder: Folder = workspace.Living.Players
 
-local loadedSignal: Signal.Signal<Model, Humanoid> = Signal.new()
-local diedSignal: Signal.Signal<Model> = Signal.new()
+local characterAdded: Signal.Signal<Model> = Signal.new()
+local characterRemoving: Signal.Signal<Model> = Signal.new()
 
 local Module = {}
 
 local dead: boolean = true
 
 --// MODULE PROPERTIES
-Module.Loaded = loadedSignal
-Module.Died = diedSignal
+Module.CharacterAdded = characterAdded
+Module.CharacterRemoving = characterRemoving
 
 Module.Character = (nil :: any) :: Model
 Module.Humanoid = (nil :: any) :: Humanoid
@@ -80,7 +80,7 @@ end
 local function onDied(character: Model): ()
 	if not dead then
 		dead = true
-		diedSignal:Fire(character)
+		characterRemoving:Fire(character)
 		AnimationsStorage.SetAnimator(nil)
 	end
 end
@@ -122,7 +122,7 @@ player.CharacterAdded:Connect(function(character: Model)
 
 	listenForDied(character, humanoid)
 
-	loadedSignal:Fire(character, humanoid)
+	characterAdded:Fire(character)
 end)
 
 return Module
