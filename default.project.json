@@ -1,0 +1,35 @@
+{
+  "name": "Anime Blitz",
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedFirst": {
+      "$className": "ReplicatedFirst",
+      "$path": "src/Client"
+    },
+
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$path": "src/Server"
+    },
+
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$path": "src/Shared",
+
+      "Packages": {
+        "$path": "Packages"
+      },
+
+      "Assets": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true
+      },
+
+      "Miscellaneous": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true
+      }
+    }
+  }
+}

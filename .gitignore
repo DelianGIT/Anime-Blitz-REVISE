@@ -1,0 +1,12 @@
+# Project place file
+/Anime Blitz.rbxlx
+
+# Roblox Studio lock files
+/*.rbxlx.lock
+/*.rbxl.lock
+
+Packages/
+.VSCodeCounter/
+sourcemap.json
+wally.lock
+.vscode
