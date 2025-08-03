@@ -104,7 +104,7 @@ local function addExistingCharacters(player: Player, id: number): ()
 		end
 	end
 
-	if count == 0 then
+	if count == 0 and not RunService:IsStudio() then
 		warn("No existing players found to initialize for player", player)
 	else
 		AddExistingCharacters.sendTo({

@@ -62,4 +62,7 @@ end
 --// EVENTS
 Charm.subscribe(getCharacterName, selectCharacter)
 
+--// SELECTING DEFAULT CHARACTER
+selectCharacter("Default")
+
 return true

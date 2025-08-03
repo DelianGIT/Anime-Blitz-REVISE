@@ -46,7 +46,6 @@ end
 
 function Module.RemoveAnimations(name: string): ()
 	if not animations[name] then
-		warn(`Animations {name} don't exist`)
 		return
 	end
 
