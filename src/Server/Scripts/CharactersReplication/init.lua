@@ -130,7 +130,7 @@ local function addCharacter(player: Player, character: Model, id: number): ()
 	end
 
 	turnOffCollisionsAndAnchor(replicator)
-	replicator.Name = tostring(player.UserId)
+	replicator.Name = player.Name
 	replicator.Parent = camera
 	replicators[id] = replicator
 
@@ -195,14 +195,12 @@ Charm.observe(PlayerData.Atom :: any, function(_, player: Player)
 	}
 	lastReplicatedTimes[id] = 0
 
-	PlayerData.Update(player, function()
-		local playerData: PlayerData.Data = PlayerData.Get(player)
-		playerData = Sift.Dictionary.copy(playerData)
-		playerData.Snapshot = snapshot
-		return playerData
-	end)
-
 	addExistingCharacters(player, id)
+
+	local character: Model? = charactersAtom()[player]
+	if character then
+		addCharacter(player, character, id)
+	end
 
 	return function()
 		removeCharacter(player, player.Character, id)
@@ -218,11 +216,15 @@ end)
 
 Charm.observe(charactersAtom :: any, function(character: Model, player: Player)
 	local id: number = playerIdMap[player]
+	if not id then
+		return nil
+	end
+
 	addCharacter(player, character, id)
 
 	return function()
 		removeCharacter(player, character, id)
-	end
+	end :: any
 end)
 
 --// EVENTS

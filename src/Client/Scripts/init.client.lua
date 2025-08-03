@@ -6,13 +6,8 @@ end
 
 --// SERVICES
 -- local ContentProvider = game:GetService("ContentProvider")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local StarterGui = game:GetService("StarterGui")
-
---// PACKAGES
-local Packages = ReplicatedStorage.Packages
-local Sift = require(Packages.Sift)
 
 --// MODULES
 local ClientModules = ReplicatedFirst.Modules
@@ -64,13 +59,13 @@ local function requireFolder(folder: Folder | LocalScript | ModuleScript): ()
 	end
 end
 
+--// REQUIRING SCRIPTS
+requireFolder(script)
+
 --// WAITING FOR THE INITIAL STATE
 local playerDataAtom: PlayerData.Atom = PlayerData.Atom
 repeat
 	task.wait()
-until not Sift.isEmpty(playerDataAtom() :: any)
-
---// REQUIRING SCRIPTS
-requireFolder(script)
+until playerDataAtom()
 
 print("Client loaded")

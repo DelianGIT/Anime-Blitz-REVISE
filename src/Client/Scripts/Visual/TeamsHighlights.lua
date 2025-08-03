@@ -17,7 +17,7 @@ type Team = "A" | "B" | "B"
 
 --// VARIABLES
 local localPlayer: Player = Players.LocalPlayer
-local localUserId: string = tostring(localPlayer.Name)
+local localPlayerName: string = localPlayer.Name
 
 local charactersFolder = workspace.Living.Players
 
@@ -35,14 +35,14 @@ local myTeam: Team
 
 --// FUNCTIONS
 local function getCharacterTeam(character: Model): Team?
-	local targetUserId: number = tonumber(character.Name) :: any
+	local targetName: string = character.Name
 	for player, _ in pairs(teamAAtom()) do
-		if player.UserId == targetUserId then
+		if player.Name == targetName then
 			return "A"
 		end
 	end
 	for player, _ in pairs(teamBAtom()) do
-		if player.UserId == targetUserId then
+		if player.Name == targetName then
 			return "B"
 		end
 	end
@@ -85,7 +85,7 @@ end, function(team: Team)
 	myTeam = team
 
 	for _, character in ipairs(charactersFolder:GetChildren()) do
-		if localUserId ~= character.Name then
+		if localPlayerName ~= character.Name then
 			addHighlight(character :: Model)
 		end
 	end
@@ -93,13 +93,13 @@ end)
 
 --// OBSERVERS
 charactersFolder.ChildAdded:Connect(function(character: Instance)
-	if localUserId ~= character.Name or not character:IsA("Model") then
+	if localPlayerName ~= character.Name or not character:IsA("Model") then
 		addHighlight(character :: any)
 	end
 end)
 
 charactersFolder.ChildRemoved:Connect(function(character: Instance)
-	if localUserId == character.Name or not character:IsA("Model") then
+	if localPlayerName == character.Name or not character:IsA("Model") then
 		return
 	end
 

@@ -11,11 +11,13 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local Store = require(script.Parent.Store)
+local LoadedPlayersList = require(script.Parent.LoadedPlayersList)
 
 --// REMOTE EVENTS
 local RemoteEvents = require(ReplicatedStorage.RemoteEvents.PlayerDataSync)
-local SyncRemoteEvent = RemoteEvents.Sync
-local RequestRemoteEvent = RemoteEvents.Request
+local Sync = RemoteEvents.Sync
+local Request = RemoteEvents.Request
+local Synced = RemoteEvents.Synced
 
 --// VARIABLES
 local Module = {}
@@ -35,20 +37,45 @@ local sharedAtoms = {
 Module.SharedAtoms = sharedAtoms
 
 --// FUNCTIONS
-local function filterPayload(player: Player, payload): any
-	local playerData = playerDataAtom()[player]
-	if payload.type == "init" and not playerData then
+local function getPlayerData(player: Player): Store.PlayerData?
+	local playerData: Store.PlayerData? = playerDataAtom()[player]
+	if not playerData then
 		repeat
 			task.wait()
 			playerData = playerDataAtom()[player]
 		until playerData or player.Parent ~= Players
-		if player.Parent ~= Players then
-			return
+	end
+	return playerData
+end
+
+local function filterPlayerData(playerData: Store.PlayerData)
+	return Sift.Dictionary.withKeys(playerData :: any, "Team", "CharacterData")
+end
+
+local function filterPayload(player: Player, payload: any): any
+	local payloadData = Sift.Dictionary.copy(payload.data)
+	payload = Sift.Dictionary.copy(payload)
+	payload.data = payloadData
+
+	local playerData
+	if payload.type == "init" then
+		playerData = getPlayerData(player)
+	elseif payload.type == "patch" then
+		local allPlayerData: Store.PlayerDataMap? = payloadData.PlayerData
+		if allPlayerData then
+			playerData = allPlayerData[player]
 		end
 	end
 
-	payload = Sift.Dictionary.copy(payload)
-	payload.data = Sift.Dictionary.set(payload.data, "PlayerData", playerData)
+	if playerData then
+		playerData = filterPlayerData(playerData)
+		if Sift.isEmpty(playerData) then
+			playerData = nil
+		end
+	end
+
+	payloadData.PlayerData = playerData
+
 	return payload
 end
 
@@ -64,15 +91,21 @@ local syncer = CharmSync.server({
 
 syncer:connect(function(player: Player, payload: any)
 	payload = filterPayload(player, payload)
-	if payload then
-		SyncRemoteEvent.sendTo(payload :: any, player)
+	if not Sift.isEmpty(payload.data) then
+		Sync.sendTo(payload :: any, player)
 	end
 end)
 
 --// EVENTS
-RequestRemoteEvent.listen(function(_, player: Player?)
+Request.listen(function(_, player: Player?)
 	if player then
 		syncer:hydrate(player)
+	end
+end)
+
+Synced.listen(function(_, player: Player?)
+	if player then
+		table.insert(LoadedPlayersList, player)
 	end
 end)
 

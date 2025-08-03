@@ -48,6 +48,7 @@ local syncer = CharmSync.client({
 
 --// EVENTS
 SyncRemoteEvent.listen(function(payload: any)
+	print(payload)
 	syncer:sync(payload)
 end)
 

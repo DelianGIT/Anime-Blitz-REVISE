@@ -1,5 +1,6 @@
 --!strict
 --// SERVICES
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -44,11 +45,9 @@ local function buildDefaultCharacter(player: Player, spawnCFrame: CFrame): (Mode
 	player:LoadCharacter()
 
 	local character: Model = player.Character :: Model
-	character.Name = tostring(player.UserId)
-	character:PivotTo(spawnCFrame)
-
 	character.Archivable = true
 	RunService.Heartbeat:Wait()
+	character:PivotTo(spawnCFrame)
 	character.Parent = charactersFolder
 
 	return character, (character :: any).Humanoid
@@ -68,7 +67,7 @@ local function buildCustomCharacter(characterName: string, player: Player, spawn
 	end
 
 	local character: Model = Utility.CloneInstance(model, charactersFolder, spawnCFrame)
-	character.Name = tostring(player.UserId)
+	character.Name = player.Name
 	player.Character = character
 	return character, (character :: any).Humanoid
 end
@@ -106,8 +105,6 @@ function Module.Build(player: Player): ()
 		newCharacter, humanoid = buildCustomCharacter(characterData.Name, player, spawnCFrame)
 		applyStats(humanoid, characterData.Stats)
 	end
-	
-	newCharacter.Name = tostring(player.UserId)
 
 	atom(function(state: { [Player]: Model })
 		return Sift.Dictionary.set(state, player, newCharacter)
@@ -120,7 +117,9 @@ function Module.Build(player: Player): ()
 	end)
 	ancestryChanged = newCharacter.AncestryChanged:Once(function()
 		died:Disconnect()
-		onDied(player)
+		if player.Parent == Players then
+			onDied(player :: any)
+		end
 	end)
 end
 

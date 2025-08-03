@@ -21,6 +21,10 @@ return ByteNet.defineNamespace("PlayerDataSync", function()
 
 		Request = ByteNet.definePacket({
 			value = ByteNet.nothing
-		})
+		}),
+
+		Synced = ByteNet.definePacket({
+			value = ByteNet.nothing
+		}),
 	}
 end)

@@ -69,19 +69,14 @@ function Module.HasAnimations(name: string): boolean
 end
 
 function Module.GetTracks(name: string): AnimationTracks?
-	if not animator then
-		return nil
-	end
-
-	local _animationTracks: AnimationTracks? = animationTracks[name]
-	if _animationTracks then
-		return _animationTracks
+	if animator then
+		return animationTracks[name]
 	else
-		error(`Animation tracks {_animationTracks} not found`)
+		return nil
 	end
 end
 
-function Module.SetAnimator(_animator: Animator?): ()
+function Module._SetAnimator(_animator: Animator?): ()
 	animator = _animator
 
 	if animator then

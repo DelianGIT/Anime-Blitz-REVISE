@@ -81,7 +81,7 @@ local function onDied(character: Model): ()
 	if not dead then
 		dead = true
 		characterRemoving:Fire(character)
-		AnimationsStorage.SetAnimator(nil)
+		AnimationsStorage._SetAnimator(nil)
 	end
 end
 
@@ -114,7 +114,7 @@ player.CharacterAdded:Connect(function(character: Model)
 	HumanoidChanger.SetHumanoid(humanoid)
 
 	local animator: Animator = humanoid:FindFirstChild("Animator") :: Animator
-	AnimationsStorage.SetAnimator(animator)
+	AnimationsStorage._SetAnimator(animator)
 
 	Module.Character = character
 	Module.Humanoid = humanoid
