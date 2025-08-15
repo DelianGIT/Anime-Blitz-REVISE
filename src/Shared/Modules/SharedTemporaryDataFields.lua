@@ -1,5 +1,4 @@
---!strict
---// TYPE
+--// TYPES
 export type Data = {
 	Team: "A" | "B" | "None",
 
@@ -12,4 +11,5 @@ export type Data = {
 	}?
 }
 
-return true
+--// FIELDS
+return {"Team", "CharacterData"}

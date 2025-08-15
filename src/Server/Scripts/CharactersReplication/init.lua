@@ -11,7 +11,7 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local PlayerData = require(ServerModules.PlayerData)
+local DataStore = require(ServerModules.DataStore)
 local CharacterController = require(ServerModules.CharacterController)
 
 local SharedModules = ReplicatedStorage.Modules
@@ -48,7 +48,9 @@ local camera: Camera = workspace.CurrentCamera
 local charactersAssetsFolder: Folder = ReplicatedStorage.Assets.Characters
 local defaultRig: Model = ReplicatedStorage.Miscellaneous.Rig
 
-local charactersAtom: Charm.Atom<{ [Player]: Model }> = CharacterController.Atom
+local charactersAtom: DataStore.Atom<Model> = CharacterController.Atom
+local snapshotsAtom: DataStore.Atom<Snapshot.Snapshot> = DataStore.Atoms.Snapshots
+local loadedPlayersList: { Player } = DataStore.LoadedPlayers
 
 local idStack: { number } = {}
 local playerIdMap: { [Player]: number } = {}
@@ -56,7 +58,6 @@ local idMap: { [number]: Data } = {}
 local lastReplicatedTimes: { [number]: number } = {}
 local playerTickRates: { [number]: number } = {}
 local replicators: { [number]: Model } = {}
-local loadedPlayersList: { Player } = PlayerData.LoadedPlayersList
 
 local incrementalFactoryUid: number = 0
 
@@ -100,7 +101,7 @@ local function addExistingCharacters(player: Player, id: number): ()
 
 		local character: Model? = otherPlayer.Character
 		if character then
-			charactersNames[id] = character.Name
+			charactersNames[otherId] = character.Name
 		end
 	end
 
@@ -116,8 +117,8 @@ end
 
 local function addCharacter(player: Player, character: Model, id: number): ()
 	local replicator: Model
-	local playerData: PlayerData.Data = PlayerData.Get(player)
-	local characterData = playerData.CharacterData
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	local characterData = tempData.CharacterData
 	if characterData then
 		local model: Model? = (charactersAssetsFolder :: any)[characterData.Name].Character
 		if model then
@@ -142,7 +143,7 @@ local function addCharacter(player: Player, character: Model, id: number): ()
 	}, loadedPlayersList)
 end
 
-local function removeCharacter(player: Player, character: Model?, id: number): ()
+local function removeCharacter(character: Model?, id: number): ()
 	local replicator: Model? = replicators[id]
 	if replicator then
 		replicator:Destroy()
@@ -184,11 +185,15 @@ local function getTickInterval(character: Model?, id: number): number
 end
 
 --// OBSERVERS
-Charm.observe(PlayerData.Atom :: any, function(_, player: Player)
+Charm.observe(DataStore.TemporaryDataAtom :: any, function(_, player: Player)
 	local id: number = getNextId()
 	playerIdMap[player] = id
 
 	local snapshot: Snapshot.Snapshot = Snapshot.new()
+	snapshotsAtom(function(state: { [Player]: Snapshot.Snapshot })
+		return Sift.Dictionary.set(state, player, snapshot)
+	end)
+
 	idMap[id] = {
 		Player = player,
 		Snapshot = snapshot
@@ -203,7 +208,7 @@ Charm.observe(PlayerData.Atom :: any, function(_, player: Player)
 	end
 
 	return function()
-		removeCharacter(player, player.Character, id)
+		removeCharacter(player.Character, id)
 
 		playerIdMap[player] = nil
 		idMap[id] = nil
@@ -223,7 +228,7 @@ Charm.observe(charactersAtom :: any, function(character: Model, player: Player)
 	addCharacter(player, character, id)
 
 	return function()
-		removeCharacter(player, character, id)
+		removeCharacter(character, id)
 	end :: any
 end)
 
@@ -245,15 +250,13 @@ ClientReplicateCFrame.listen(function(clientData, player: Player?)
 	local cframe: CFrame = clientData.CFrame
 	data.Snapshot:Push(timestamp, cframe)
 
-	PlayerData.Update(player, function()
-		local playerData: PlayerData.Data = PlayerData.Get(player)
-		playerData = Sift.Dictionary.copy(playerData)
-		playerData.RootCFrame = cframe
-		return playerData
-	end)
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	tempData = Sift.Dictionary.copy(tempData)
+	tempData.RootCFrame = cframe
+	DataStore.UpdateTemporaryData(player, tempData)
 end)
 
-RunService.PostSimulation:Connect(function(deltaTime: number)
+RunService.PostSimulation:Connect(function()
 	Grid.UpdateGrid()
 
 	local cframes: { [number]: CFrame } = {}

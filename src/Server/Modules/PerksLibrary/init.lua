@@ -9,7 +9,7 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local PlayerData = require(ServerModules.PlayerData)
+local DataStore = require(ServerModules.DataStore)
 
 local Storage = require(script.Storage)
 
@@ -18,9 +18,9 @@ local Module = {}
 
 --// MODULE FUNCTIONS
 function Module.Update(player: Player)
-	local playerData: PlayerData.Data = PlayerData.Get(player)
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
 	
-	local moveset = playerData.Moveset
+	local moveset = tempData.Moveset
 	if not moveset then
 		error(`Player {player} doesn't have moveset`)
 	end
@@ -31,7 +31,7 @@ function Module.Update(player: Player)
 		error(`{player}'s moveset {movesetName} doesn't have perks`)
 	end
 
-	local level: number = playerData.Level
+	local level: number = tempData.Level
 	local perks: Storage.Perks? = pack[level]
 	if not perks then
 		return
@@ -45,17 +45,15 @@ function Module.Update(player: Player)
 		error(`Perk {number} for level {level} doesn't exist in {player}'s moveset {movesetName}`)
 	end
 
-	local playerPerks: { [string]: true } = playerData.Perks
+	local playerPerks: { [string]: true } = tempData.Perks
 	local perkIdentifier: string = `{level}_{number}`
 	if playerPerks[perkIdentifier] then
 		error(`Player {player} already has perk {perkIdentifier} from moveset {movesetName}`)
 	end
 
-	PlayerData.Update(player, function()
-		playerData = Sift.Dictionary.copy(playerData)
-		playerData.Perks[perkIdentifier] = perk.Apply(player)
-		return playerData
-	end)
+	tempData = Sift.Dictionary.copy(tempData)
+	tempData.Perks[perkIdentifier] = perk.Apply(player)
+	DataStore.UpdateTemporaryData(player, tempData)
 end
 
 return Module

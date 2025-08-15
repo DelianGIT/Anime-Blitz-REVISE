@@ -107,7 +107,7 @@ ServerReplicateCFrame.listen(function(data)
 	local timestamps: { [number]: number } = data.Timestamps
 	local cframes: { [number]: CFrame } = data.CFrames
 
-	for id, data in pairs(idMap) do
+	for id, _data in pairs(idMap) do
 		local timestamp: number? = timestamps[id]
 		if not timestamp then
 			continue
@@ -119,7 +119,7 @@ ServerReplicateCFrame.listen(function(data)
 		end
 
 		InterpolationBuffer.RegisterPacket(id, timestamp, playerTickRates[id] or TICK_RATE)
-		data.Snapshot:Push(timestamps[id], cframe)
+		_data.Snapshot:Push(timestamps[id], cframe)
 	end
 
 	RenderCache.OnSnapshotUpdate(timestamps)

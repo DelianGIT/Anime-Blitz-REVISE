@@ -10,7 +10,7 @@ local Charm = require(Packages.Charm)
 
 --// MODULES
 local ClientModules = ReplicatedFirst.Modules
-local PlayerData = require(ClientModules.PlayerData)
+local DataStore = require(ClientModules.DataStore)
 
 --// TYPES
 type Team = "A" | "B" | "B"
@@ -26,10 +26,9 @@ local greenHighlight: Highlight = assetsFolder.Green
 local redHighlight: Highlight = assetsFolder.Red
 local whiteHighlight: Highlight = assetsFolder.White
 
-local playerDataAtom = PlayerData.Atom
-
-local teamAAtom: Charm.Atom<{ [Player]: boolean }> = PlayerData.SharedAtoms.TeamA
-local teamBAtom: Charm.Atom<{ [Player]: boolean }> = PlayerData.SharedAtoms.TeamB
+local temporaryDataAtom: DataStore.TemporaryDataAtom = DataStore.TemporaryDataAtom
+local teamAAtom: DataStore.Atom<boolean> = DataStore.SharedAtoms.TeamA
+local teamBAtom: DataStore.Atom<boolean> = DataStore.SharedAtoms.TeamB
 
 local myTeam: Team
 
@@ -80,7 +79,7 @@ end
 
 --// EVENTS
 Charm.subscribe(function()
-	return playerDataAtom().Team
+	return temporaryDataAtom().Team
 end, function(team: Team)
 	myTeam = team
 

@@ -21,7 +21,7 @@ local playerLatencies: { [number]: Data } = {}
 local Module = {}
 
 --// MODULE FUNCTIONS
-function Module.RegisterPacket(networkId: number, serverTime: number, tickRate: number): ()
+function Module.RegisterPacket(networkId: number, serverTime: number): ()
 	local clientNow: number = RenderCache.GetEstimatedServerTime(networkId)
 	local latency: number = clientNow - serverTime
 	if latency > 1 then

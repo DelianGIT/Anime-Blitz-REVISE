@@ -28,9 +28,9 @@ function Module.AddAnimations(name: string, animationsToAdd: { [string]: Animati
 		local _animationsPack: Animations = {}
 		local _animationTracks: AnimationTracks = {}
 
-		for name, animation in pairs(animationsToAdd) do
-			_animationsPack[name] = animation
-			_animationTracks[name] = animator:LoadAnimation(animation)
+		for _name, animation in pairs(animationsToAdd) do
+			_animationsPack[_name] = animation
+			_animationTracks[_name] = animator:LoadAnimation(animation)
 		end
 
 		animations[name] = _animationsPack

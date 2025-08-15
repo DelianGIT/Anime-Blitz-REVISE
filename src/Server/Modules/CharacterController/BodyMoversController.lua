@@ -9,7 +9,7 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local PlayerData = require(ServerModules.PlayerData)
+local DataStore = require(ServerModules.DataStore)
 
 -- // REMOTE EVENTS
 local RemoteEvents = require(ReplicatedStorage.RemoteEvents.BodyMoversController)
@@ -44,8 +44,8 @@ function Module.Create(player: Player, name: string, moverType: MoverType, param
 		error(`{player}'s HumanoidRootPart doesn't exist for {moverType}_{name}`)
 	end
 
-	local playerData: PlayerData.Data = PlayerData.Get(player)
-	local allBodyMovers: { [MoverType]: { [string]: BodyMover } } = playerData.BodyMovers :: any
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	local allBodyMovers: { [MoverType]: { [string]: BodyMover } } = tempData.BodyMovers :: any
 	
 	local bodyMovers: { [string]: BodyMover }? = allBodyMovers[moverType]
 	if not bodyMovers then
@@ -64,8 +64,8 @@ function Module.Create(player: Player, name: string, moverType: MoverType, param
 		startTimestamp = os.clock()
 
 		task.delay(duration, function()
-			playerData = PlayerData.Get(player)
-			allBodyMovers = playerData.BodyMovers :: any
+			tempData = DataStore.GetTemporaryData(player)
+			allBodyMovers = tempData.BodyMovers :: any
 
 			local currentMover: BodyMover = allBodyMovers[moverType][name]
 			if currentMover and currentMover.StartTimestamp == startTimestamp then
@@ -74,18 +74,16 @@ function Module.Create(player: Player, name: string, moverType: MoverType, param
 		end)
 	end
 
-	PlayerData.Update(player, function()
-		bodyMovers = Sift.Dictionary.set(bodyMovers, name, {
-			Priority = priority,
-			StartTimestamp = startTimestamp,
-		})
+	bodyMovers = Sift.Dictionary.set(bodyMovers, name, {
+		Priority = priority,
+		StartTimestamp = startTimestamp,
+	})
 
-		allBodyMovers = Sift.Dictionary.set(allBodyMovers, moverType, bodyMovers)
+	allBodyMovers = Sift.Dictionary.set(allBodyMovers, moverType, bodyMovers)
 
-		playerData = Sift.Dictionary.copy(playerData)
-		playerData.BodyMovers = allBodyMovers :: any
-		return playerData
-	end)
+	tempData = Sift.Dictionary.copy(tempData)
+	tempData.BodyMovers = allBodyMovers :: any
+	DataStore.UpdateTemporaryData(player, tempData)
 
 	CreateRemoteEvent.sendTo({
 		Name = name,
@@ -105,23 +103,21 @@ function Module.Destroy(player: Player, name: string, moverType: MoverType): ()
 		error(`{player}'s HumanoidRootPart doesn't exist for {moverType}_{name}`)
 	end
 
-	local playerData: PlayerData.Data = PlayerData.Get(player)
-	local allBodyMovers: { [MoverType]: { [string]: BodyMover } } = playerData.BodyMovers :: any
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	local allBodyMovers: { [MoverType]: { [string]: BodyMover } } = tempData.BodyMovers :: any
 	
 	local bodyMovers: { [string]: BodyMover }? = allBodyMovers[moverType]
 	if not bodyMovers then
 		error(`Invalid {name} body mover type for {player}: {moverType}`)
 	end
 
-	PlayerData.Update(player, function()
-		bodyMovers = Sift.Dictionary.removeKey(bodyMovers, name)
+	bodyMovers = Sift.Dictionary.removeKey(bodyMovers, name)
 
-		allBodyMovers = Sift.Dictionary.set(allBodyMovers, moverType, bodyMovers)
-		
-		playerData = Sift.Dictionary.copy(playerData)
-		playerData.BodyMovers = allBodyMovers :: any
-		return playerData
-	end)
+	allBodyMovers = Sift.Dictionary.set(allBodyMovers, moverType, bodyMovers)
+	
+	tempData = Sift.Dictionary.copy(tempData)
+	tempData.BodyMovers = allBodyMovers :: any
+	DataStore.UpdateTemporaryData(player, tempData)
 
 	DestroyRemoteEvent.sendTo({
 		Name = name,
@@ -130,8 +126,8 @@ function Module.Destroy(player: Player, name: string, moverType: MoverType): ()
 end
 
 function Module._DestroyBodyMovers(player: Player): ()
-	local playerData: PlayerData.Data = PlayerData.Get(player)
-	local allBodyMovers: { [MoverType]: { [string]: BodyMover } } = playerData.BodyMovers :: any
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	local allBodyMovers: { [MoverType]: { [string]: BodyMover } } = tempData.BodyMovers :: any
 
 	for _, bodyMovers in pairs(allBodyMovers) do
 		table.clear(bodyMovers)

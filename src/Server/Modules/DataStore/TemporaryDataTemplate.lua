@@ -6,24 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SharedModules = ReplicatedStorage.Modules
 local Snapshot = require(SharedModules.Snapshot)
 
---// TEMPLATE
-local template: Data = {
-	Team = "None",
-
-	UltimateCharge = 0,
-
-	Level = 0,
-	Experience = 0,
-
-	Perks = {},
-
-	HumanoidChanges = {},
-	BodyMovers = {
-		LinearVelocity = {}
-	}
-} :: any
-
---// TYPE
+--// TYPES
 export type Data = {
 	Team: "A" | "B" | "None",
 	
@@ -43,8 +26,16 @@ export type Data = {
 	Experience: number,
 
 	Moveset: {
-		Name: string
+		Name: string,
+		Moves: { [string]: any }
 	}?,
+	MoveCommunicator: any?,
+
+	Cooldowns: { [string]: {
+		Duration: number,
+		StartTimestamp: number,
+		TempDuration: number?
+	} },
 
 	Perks: { [string]: true },
 
@@ -67,7 +58,37 @@ export type Data = {
 
 	Snapshot: Snapshot.Snapshot,
 
-	RootCFrame: CFrame
+	RootCFrame: CFrame,
+
+	Knockback: {
+		Priority: number,
+		StartTimestamp: number?,
+	}?,
+
+	Stun: {
+		WalkSpeed: number?,
+		JumpPower: number?,
+		StartTimestamp: number?,
+	}?
 }
+
+--// TEMPLATE
+local template: Data = {
+	Team = "None",
+
+	UltimateCharge = 0,
+
+	Level = 0,
+	Experience = 0,
+
+	Cooldowns = {},
+
+	Perks = {},
+
+	HumanoidChanges = {},
+	BodyMovers = {
+		LinearVelocity = {}
+	}
+} :: any
 
 return template

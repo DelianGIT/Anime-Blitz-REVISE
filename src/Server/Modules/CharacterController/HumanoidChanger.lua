@@ -9,7 +9,7 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local PlayerData = require(ServerModules.PlayerData)
+local DataStore = require(ServerModules.DataStore)
 
 --// REMOTE EVENTS
 local RemoteEvents = require(ReplicatedStorage.RemoteEvents.HumanoidChanger)
@@ -33,7 +33,7 @@ local Module = {}
 
 --// MODULE FUNCTIONS
 function Module.Change(player: Player, name: string, properties: { [string]: any }, params: Params): ()
-	local character = player.Character
+	local character: Model? = player.Character
 	if not character then
 		warn(`{player}'s character doesn't exist for {name}: {properties}`)
 		return
@@ -46,11 +46,11 @@ function Module.Change(player: Player, name: string, properties: { [string]: any
 	end
 
 	local priority: number = params.Priority
-	local playerData: PlayerData.Data = PlayerData.Get(player)
-	local allChanges: { [string]: Change } = playerData.HumanoidChanges
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	local allChanges: { [string]: Change } = tempData.HumanoidChanges
 	local existingChange: Change? = allChanges[name]
 	if existingChange and existingChange.Priority > priority then
-		warn(`Change {name} exists with higher priority`)
+		warn(`Change {name} exists with higher priority: {existingChange.Priority} > {priority}`)
 		return
 	end
 
@@ -60,25 +60,23 @@ function Module.Change(player: Player, name: string, properties: { [string]: any
 		startTimestamp = os.clock()
 
 		task.delay(duration, function()
-			playerData = PlayerData.Get(player)
-			local currentChange: Change = playerData.HumanoidChanges[name]
+			tempData = DataStore.GetTemporaryData(player)
+			local currentChange: Change = tempData.HumanoidChanges[name]
 			if currentChange and currentChange.StartTimestamp == startTimestamp then
 				Module.Cancel(player, name)
 			end
 		end)
 	end
 
-	PlayerData.Update(player, function()
-		local change: Change = {
-			Properties = Sift.Dictionary.copyDeep(properties),
-			Priority = priority,
-			StartTimestamp = startTimestamp
-		}
+	local change: Change = {
+		Properties = Sift.Dictionary.copyDeep(properties),
+		Priority = priority,
+		StartTimestamp = startTimestamp
+	}
 
-		playerData = Sift.Dictionary.copy(playerData)
-		playerData.HumanoidChanges = Sift.Dictionary.set(allChanges, name, change)
-		return playerData
-	end)
+	tempData = Sift.Dictionary.copy(tempData)
+	tempData.HumanoidChanges = Sift.Dictionary.set(allChanges, name, change)
+	DataStore.UpdateTemporaryData(player, tempData)
 
 	ChangeRemoteEvent.sendTo({
 		Name = name,
@@ -88,27 +86,24 @@ function Module.Change(player: Player, name: string, properties: { [string]: any
 end
 
 function Module.Cancel(player: Player, name: string): ()
-	local playerData: PlayerData.Data = PlayerData.Get(player)
-	local allChanges: { [string]: Change } = playerData.HumanoidChanges
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	local allChanges: { [string]: Change } = tempData.HumanoidChanges
 	if not allChanges[name] then
 		return
 	end
 
-	PlayerData.Update(player, function()
-		playerData = Sift.Dictionary.copy(playerData)
-		playerData.HumanoidChanges = Sift.Dictionary.removeKey(allChanges, name)
-		return playerData
-	end)
+	tempData = Sift.Dictionary.copy(tempData)
+	tempData.HumanoidChanges = Sift.Dictionary.removeKey(allChanges, name)
+	DataStore.UpdateTemporaryData(player, tempData)
 
 	CancelRemoteEvent.sendTo(name, player)
 end
 
 function Module._ClearChanges(player: Player): ()
-	local playerData: PlayerData.Data = PlayerData.Get(player)
-	PlayerData.Update(player, function()
-		table.clear(playerData.HumanoidChanges)
-		return playerData
-	end)
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	tempData = Sift.Dictionary.copy(tempData)
+	tempData.HumanoidChanges = {}
+	DataStore.UpdateTemporaryData(player, tempData)
 end
 
 return Module

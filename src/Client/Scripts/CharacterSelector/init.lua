@@ -9,7 +9,7 @@ local Charm = require(Packages.Charm)
 
 --// MODULES
 local ClientModules = ReplicatedFirst.Modules
-local PlayerData = require(ClientModules.PlayerData)
+local DataStore = require(ClientModules.DataStore)
 local AnimationsStorage = require(ClientModules.CharacterController.AnimationsStorage)
 
 local Animate = require(script.Animate)
@@ -17,11 +17,11 @@ local Animate = require(script.Animate)
 --// VARIABLES
 local assetsFolder = ReplicatedStorage.Assets.Characters
 
-local playerDataAtom: PlayerData.Atom = PlayerData.Atom
+local temporaryDataAtom: DataStore.TemporaryDataAtom = DataStore.TemporaryDataAtom
 
 --// FUNCTIONS
 local function getCharacterName()
-	local characterData = playerDataAtom().CharacterData
+	local characterData = temporaryDataAtom().CharacterData
 	if characterData then
 		return characterData.Name
 	else

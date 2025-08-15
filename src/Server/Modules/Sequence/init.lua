@@ -32,7 +32,7 @@ local function sortKeyframes(keyframes: { [number]: (...any) -> () }): { Keyfram
 	end)
 
 	local result = {}
-	for key: number, value: number in ipairs(framesTimestamps) do
+	for _, value in ipairs(framesTimestamps) do
 		table.insert(result, {
 			Time = value,
 			Function = keyframes[value],

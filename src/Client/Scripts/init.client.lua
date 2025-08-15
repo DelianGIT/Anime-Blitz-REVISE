@@ -16,10 +16,14 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local ClientModules = ReplicatedFirst.Modules
-local PlayerData = require(ClientModules.PlayerData)
+local DataStore = require(ClientModules.DataStore)
+
+--// REMOTE EVENTS
+local RemoteEvents = require(ReplicatedStorage.RemoteEvents.ClientLoaded)
+local RemoteEvent = RemoteEvents.Loaded
 
 --// CONSTANTS
-local PRELOADING = true
+-- local PRELOADING = true
 
 --// VARIABLES
 -- local assetsFolder: Folder = ReplicatedStorage.Assets
@@ -32,9 +36,9 @@ StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, false)
 StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.SelfView, false)
 
 --// PRELOADING
-if PRELOADING then
-	--TODO: Add preloading
-end
+-- if PRELOADING then
+ 	--TODO: Add preloading
+-- end
 
 --// FUNCTIONS
 local function requireModule(module: ModuleScript): ()
@@ -68,9 +72,11 @@ end
 requireFolder(script)
 
 --// WAITING FOR THE INITIAL STATE
-local playerDataAtom: PlayerData.Atom = PlayerData.Atom
+local temporaryDataAtom: DataStore.TemporaryDataAtom = DataStore.TemporaryDataAtom
 repeat
 	task.wait()
-until not Sift.isEmpty(playerDataAtom() :: any)
+until not Sift.isEmpty(temporaryDataAtom() :: any)
+
+RemoteEvent.send()
 
 print("Client loaded")

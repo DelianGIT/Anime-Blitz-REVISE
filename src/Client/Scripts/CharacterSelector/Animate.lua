@@ -50,7 +50,7 @@ local function setAnimationSpeed(speed: number): ()
 	end
 end
 
-local function playAnimation(name: string, transitionTime: number): AnimationTrack?
+local function playAnimation(name: string, transitionTime: number, index: number?): AnimationTrack?
 	if not animationTracks then
 		return nil
 	end
@@ -60,7 +60,7 @@ local function playAnimation(name: string, transitionTime: number): AnimationTra
 		error(`Animation {name} not found`)
 	end
 
-	local index: number = 1
+	index = index or 1
 	local animationName: string = `{name}_1`
 	local roll: number = math.random(1, animationList.TotalWeight)
 	local weight: number = animationList[animationName]
@@ -87,9 +87,9 @@ local function playAnimation(name: string, transitionTime: number): AnimationTra
 	end
 
 	currentAnimationTrack = animationTracks[animationName];
-	(currentAnimationTrack :: AnimationTrack):Play()
+	(currentAnimationTrack :: AnimationTrack):Play(transitionTime)
 	currentAnimationStoppedHandler = (currentAnimationTrack :: AnimationTrack).Stopped:Connect(function()
-		playAnimation(name, 0)
+		playAnimation(name, 0, index)
 		setAnimationSpeed(currentAnimationSpeed)
 	end)
 
@@ -181,12 +181,12 @@ CharacterController.CharacterAdded:Connect(function()
 	end)
 	humanoid.FreeFalling:Connect(function()
 		if jumpAnimationTime <= 0 then
-			playAnimation("Fall", 1, FALL_TRANSITION_TIME)
+			playAnimation("Fall", FALL_TRANSITION_TIME)
 		end
 		pose = "FreeFalling"
 	end)
 	humanoid.Jumping:Connect(function()
-		local animationTrack: AnimationTrack? = playAnimation("Jump", 1, 0.1)
+		local animationTrack: AnimationTrack? = playAnimation("Jump", 0.1)
 		if animationTrack then
 			jumpAnimationDuration = animationTrack.Length
 		end
@@ -195,20 +195,20 @@ CharacterController.CharacterAdded:Connect(function()
 	end)
 	humanoid.Running:Connect(function(speed: number)
 		if speed > 0 and humanoid.MoveDirection.Magnitude > 0.1 then
-			playAnimation("Walk", 1, 0.1)
+			playAnimation("Walk", 0.1)
 			pose = "Running"
 		else
-			playAnimation("Idle", 1, 0.1)
+			playAnimation("Idle", 0.1)
 			pose = "Standing"
 		end
 	end)
-	humanoid.StateChanged:Connect(function(old: Enum.HumanoidStateType, new: Enum.HumanoidStateType)
+	humanoid.StateChanged:Connect(function(_, new: Enum.HumanoidStateType)
 		if new == Enum.HumanoidStateType.Physics then
 			pose = "Physics"
 		end
 	end)
 
-	playAnimation("Idle", 1, 0.1)
+	playAnimation("Idle", 0.1)
 	pose = "Standing"
 
 	while animationTracks do
@@ -221,9 +221,9 @@ CharacterController.CharacterAdded:Connect(function()
 		lastTick = currentTick
 
 		if pose == "FreeFall" and jumpAnimationTime <= 0 then
-			playAnimation("Fall", 1, FALL_TRANSITION_TIME)
+			playAnimation("Fall", FALL_TRANSITION_TIME)
 		elseif pose == "Running" then
-			playAnimation("Walk", 1, 0.1)
+			playAnimation("Walk", 0.1)
 		elseif
 			(pose :: any) == "GettingUp"
 			or (pose :: any) == "FallingDown"

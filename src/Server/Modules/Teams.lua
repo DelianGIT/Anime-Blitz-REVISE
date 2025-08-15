@@ -6,19 +6,18 @@ local ServerScriptService = game:GetService("ServerScriptService")
 --// PACKAGES
 local Packages = ReplicatedStorage.Packages
 local Sift = require(Packages.Sift)
-local Charm = require(Packages.Charm)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local PlayerData = require(ServerModules.PlayerData)
+local DataStore = require(ServerModules.DataStore)
 
 --// TYPES
 type Team = "A" | "B" | "None"
 
 --// VARIABLES
-local sharedAtoms = PlayerData.SharedAtoms
-local teamA: Charm.Atom<{ [Player]: boolean }> = sharedAtoms.TeamA
-local teamB: Charm.Atom<{ [Player]: boolean }> = sharedAtoms.TeamB
+local sharedAtoms = DataStore.SharedAtoms
+local teamA: DataStore.Atom<boolean> = sharedAtoms.TeamA
+local teamB: DataStore.Atom<boolean> = sharedAtoms.TeamB
 
 local Module = {}
 
@@ -28,19 +27,17 @@ Module.TeamB = teamB
 
 --// MODULE FUNCTIONS
 function Module.Add(player: Player, team: "A" | "B"): ()
-	local playerData: PlayerData.Data = PlayerData.Get(player)
-	local currentTeam: Team? = playerData.Team
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	local currentTeam: Team? = tempData.Team
 	if currentTeam ~= "None" then
 		error(`Player is already in team {currentTeam}`)
 	end
 
-	PlayerData.Update(player, function()
-		playerData = Sift.Dictionary.copy(playerData)
-		playerData.Team = team
-		return playerData
-	end)
+	tempData = Sift.Dictionary.copy(tempData)
+	tempData.Team = team
+	DataStore.UpdateTemporaryData(player, tempData)
 
-	local atom: Charm.Atom<{ [Player]: boolean }>
+	local atom: DataStore.Atom<boolean>
 	if team == "A" then
 		atom = teamA
 	elseif team == "B" then
@@ -53,19 +50,17 @@ function Module.Add(player: Player, team: "A" | "B"): ()
 end
 
 function Module.Remove(player: Player): ()
-	local playerData: PlayerData.Data = PlayerData.Get(player)
-	local currentTeam: Team? = playerData.Team
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	local currentTeam: Team? = tempData.Team
 	if not currentTeam then
 		error(`Player isn't in team`)
 	end
 
-	PlayerData.Update(player, function()
-		playerData = Sift.Dictionary.copy(playerData)
-		playerData.Team = "None"
-		return playerData
-	end)
+	tempData = Sift.Dictionary.copy(tempData)
+	tempData.Team = "None"
+	DataStore.UpdateTemporaryData(player, tempData)
 
-	local atom: Charm.Atom<{ [Player]: boolean }>
+	local atom: DataStore.Atom<boolean>
 	if currentTeam == "A" then
 		atom = teamA
 	elseif currentTeam == "B" then
@@ -77,19 +72,29 @@ function Module.Remove(player: Player): ()
 	end)
 end
 
---// OBSERVERS
-Charm.observe(PlayerData.Atom :: any, function(_, player: Player)
-	return function()
-		if teamA()[player] then
-			teamA(function(state: { [Player]: boolean })
-				return Sift.Set.delete(state, player)
-			end)
-		elseif teamB()[player] then
-			teamB(function(state: { [Player]: boolean })
-				return Sift.Set.delete(state, player)
-			end)
-		end
+function Module.Get(player: Player): Team
+	if teamA()[player] then
+		return "A"
+	elseif teamB()[player] then
+		return "B"
+	else
+		return "None"
 	end
-end)
+end
+
+function Module.AreInSame(player1: Player, player2: Player, noneIsDifferent: boolean?): boolean
+	local team1: Team = Module.Get(player1)
+	local team2: Team = Module.Get(player2)
+
+	if team1 == team2 then
+		if noneIsDifferent and team1 == "None" then
+			return false
+		else
+			return true
+		end
+	else
+		return false
+	end
+end
 
 return Module

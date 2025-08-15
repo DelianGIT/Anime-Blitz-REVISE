@@ -9,7 +9,7 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local PlayerData = require(ServerModules.PlayerData)
+local DataStore = require(ServerModules.DataStore)
 local PerksLibrary = require(ServerModules.PerksLibrary)
 
 --// CONSTANTS
@@ -41,18 +41,16 @@ end
 
 --// MODULE FUNCTIONS
 function Module.GiveExperience(player: Player, damageAmount: number)
-	local playerData: PlayerData.Data = PlayerData.Get(player)
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
 
-	local currentLevel: number = playerData.Level
-	local currentExperience: number = playerData.Experience
+	local currentLevel: number = tempData.Level
+	local currentExperience: number = tempData.Experience + damageAmount
 	local newLevel: number, newExperience: number = getLevel(currentLevel, currentExperience)
 
-	PlayerData.Update(player, function()
-		playerData = Sift.Dictionary.copy(playerData)
-		playerData.Level = newLevel
-		playerData.Experience = newExperience
-		return playerData
-	end)
+	tempData = Sift.Dictionary.copy(tempData)
+	tempData.Level = newLevel
+	tempData.Experience = newExperience
+	DataStore.UpdateTemporaryData(player, tempData)
 
 	if currentLevel ~= newLevel then
 		PerksLibrary.Update(player)

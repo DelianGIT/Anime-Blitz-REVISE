@@ -12,7 +12,7 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local PlayerData = require(ServerModules.PlayerData)
+local DataStore = require(ServerModules.DataStore)
 
 local SharedModules = ReplicatedStorage.Modules
 local Utility = require(SharedModules.Utility)
@@ -92,13 +92,13 @@ function Module.Build(player: Player): ()
 		end)
 	end
 
-	local playerData: PlayerData.Data = PlayerData.Get(player)
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
 
-	local spawnPoint: BasePart = playerData.SpawnPoint or DEFAULT_SPAWN_POINT
+	local spawnPoint: BasePart = tempData.SpawnPoint or DEFAULT_SPAWN_POINT
 	local spawnCFrame: CFrame = spawnPoint.CFrame * SPAWN_OFFSET
 
 	local newCharacter: Model, humanoid: Humanoid
-	local characterData = playerData.CharacterData
+	local characterData = tempData.CharacterData
 	if not characterData then
 		newCharacter, humanoid = buildDefaultCharacter(player, spawnCFrame)
 	else

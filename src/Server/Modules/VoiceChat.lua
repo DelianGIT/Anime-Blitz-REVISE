@@ -45,19 +45,19 @@ local function observer(player: Player, teamDevices: { [Player]: AudioDeviceInpu
 	if not newDevice then
 		return nil :: any
 	end
-	teamADevices[player] = newDevice
+	teamDevices[player] = newDevice
 
 	newDevice.Muted = muted
 	newDevice.AccessType = Enum.AccessModifierType.Allow
 
 	table.insert(userIds, player.UserId)
-	updateDevices(teamADevices, userIds)
+	updateDevices(teamDevices, userIds)
 
 	return function()
-		teamADevices[player] = nil
+		teamDevices[player] = nil
 
 		table.remove(teamAUserIds, table.find(userIds, player.UserId))
-		updateDevices(teamADevices, userIds)
+		updateDevices(teamDevices, userIds)
 	end
 end
 

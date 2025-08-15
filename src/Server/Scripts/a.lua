@@ -8,11 +8,11 @@ local Charm = require(Packages.Charm)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local PlayerData = require(ServerModules.PlayerData)
+local DataStore = require(ServerModules.DataStore)
 local CharacterController = require(ServerModules.CharacterController)
 
 --// OBSERVER
-Charm.observe(PlayerData.Atom :: any, function(_, player: Player)
+Charm.observe(DataStore.Atoms.LoadedPlayers :: any, function(_, player: Player)
 	CharacterController.Build(player)
 end)
 
