@@ -11,8 +11,9 @@ local Sift = require(Packages.Sift)
 local ServerModules = ServerScriptService.Modules
 local DataStore = require(ServerModules.DataStore)
 
+local Controller = require(script.Controller)
 local Storage = require(script.Storage)
-local Cooldown = require(script.Cooldown)
+local Cooldown = require(script.Controller.Cooldown)
 
 --// REMOTE EVENTS
 local RemoteEvents = require(ReplicatedStorage.RemoteEvents.Moveset)
@@ -57,11 +58,10 @@ function Module.Give(player: Player, name: string): ()
 		end
 	end
 
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.Moveset = {
+	tempData = Sift.Dictionary.set(tempData, "Moveset", {
 		Name = name,
 		Moves = moves
-	}
+	})
 	DataStore.UpdateTemporaryData(player, tempData)
 
 	Give.sendTo(name, player)
@@ -75,9 +75,12 @@ function Module.TakeMoveset(player: Player): ()
 		return
 	end
 
-	Controller.Cancel(player, true, true)
+	Controller.Cancel(player, true)
 
 	Cooldown.RemoveAll(player)
+
+	tempData = Sift.Dictionary.removeKey(tempData, "Moveset")
+	DataStore.UpdateTemporaryData(player, tempData)
 
 	Take.sendTo(nil, player)
 end

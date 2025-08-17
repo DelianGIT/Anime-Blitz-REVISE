@@ -61,7 +61,8 @@ function Module.Change(player: Player, name: string, properties: { [string]: any
 
 		task.delay(duration, function()
 			tempData = DataStore.GetTemporaryData(player)
-			local currentChange: Change = tempData.HumanoidChanges[name]
+
+			local currentChange: Change = (tempData.HumanoidChanges :: any)[name]
 			if currentChange and currentChange.StartTimestamp == startTimestamp then
 				Module.Cancel(player, name)
 			end
@@ -73,9 +74,10 @@ function Module.Change(player: Player, name: string, properties: { [string]: any
 		Priority = priority,
 		StartTimestamp = startTimestamp
 	}
+	allChanges = Sift.Dictionary.set(allChanges, name, change)
 
 	tempData = Sift.Dictionary.copy(tempData)
-	tempData.HumanoidChanges = Sift.Dictionary.set(allChanges, name, change)
+	tempData.HumanoidChanges = allChanges
 	DataStore.UpdateTemporaryData(player, tempData)
 
 	ChangeRemoteEvent.sendTo({
@@ -87,13 +89,15 @@ end
 
 function Module.Cancel(player: Player, name: string): ()
 	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	
 	local allChanges: { [string]: Change } = tempData.HumanoidChanges
 	if not allChanges[name] then
 		return
 	end
-
+	allChanges = Sift.Dictionary.removeKey(allChanges, name)
+	
 	tempData = Sift.Dictionary.copy(tempData)
-	tempData.HumanoidChanges = Sift.Dictionary.removeKey(allChanges, name)
+	tempData.HumanoidChanges = allChanges
 	DataStore.UpdateTemporaryData(player, tempData)
 
 	CancelRemoteEvent.sendTo(name, player)
@@ -101,8 +105,7 @@ end
 
 function Module._ClearChanges(player: Player): ()
 	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.HumanoidChanges = {}
+	tempData = Sift.Dictionary.set(tempData, "HumanoidChanges", {})
 	DataStore.UpdateTemporaryData(player, tempData)
 end
 

@@ -4,7 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 --// TYPES
-type Args = {
+export type Args = {
 	Player: Player,
 	Character: Model,
 	MoveData: MoveData,
@@ -12,22 +12,23 @@ type Args = {
 	Communicator: any,
 	Data: any
 }
-type Cooldown = {
-	Type: "Start" | "End" | "Manual",
+export type CooldownType = "Start" | "End" | "Manual"
+export type Cooldown = {
+	Type: CooldownType,
 	Duration: number,
 }
-type MoveData = {
+export type MoveData = {
 	Duration: number,
 	Cooldown: Cooldown?,
 	StartIsSequence: boolean?,
 	EndIsSequence: boolean?,
 }
-type MoveFunctions = {
-	Start: (args: Args) -> (),
-	End: (args: Args) -> (),
-	Cancel: (args: Args) -> (),
+export type MoveFunctions = {
+	Start: (Args) -> (),
+	End: (Args) -> (),
+	Cancel: (Args) -> (),
 }
-type Move = {
+export type Move = {
 	Data: MoveData,
 	Functions: MoveFunctions,
 }

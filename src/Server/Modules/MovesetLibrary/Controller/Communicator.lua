@@ -1,5 +1,6 @@
 --!strict
 --// SERVICES
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -33,7 +34,6 @@ type CommunicatorData = {
 export type Communicator = typeof(setmetatable({} :: CommunicatorData, Communicator))
 
 --// VARIABLES
-local communicators: { [Player]: Communicator } = {}
 local Module = {}
 
 --// CLASS FUNCTIONS
@@ -45,37 +45,39 @@ function Communicator.Fire(self: Communicator, connectionName: string, ...: any)
 end
 
 function Communicator.Connect(self: Communicator, name: string, functionToConnect: Function): ()
-	local connections: { [string]: Connection } = self.Connections
-	connections[name] = {
+	self.Connections[name] = {
 		Function = functionToConnect
-	}
+	} :: Connection
 end
 
 function Communicator.Once(self: Communicator, name: string, functionToConnect: Function): ()
-	local connections: { [string]: Connection } = self.Connections
-	connections[name] = {
+	self.Connections[name] = {
 		Function = function(...: any)
-			connections[name] = nil
+			self.Connections = Sift.Dictionary.removeKey(self.Connections, name)
+			
 			if functionToConnect then
 				functionToConnect(...)
 			end
 		end
-	}
+	} :: Connection
 end
 
 function Communicator.Wait(self: Communicator, name: string, functionToConnect: Function): ()
 	local thread: thread = coroutine.running()
-	local connections: { [string]: Connection } = self.Connections
-	connections[name] = {
+	
+	self.Connections[name] = {
 		Function = function(...: any)
-			connections[name] = nil
+			self.Connections = Sift.Dictionary.removeKey(self.Connections, name)
+			
 			if functionToConnect then
 				functionToConnect(...)
 			end
+
 			coroutine.resume(thread)
 		end,
-		Thread = thread,
-	}
+		Thread = thread
+	} :: Connection
+
 	coroutine.yield()
 end
 
@@ -85,7 +87,7 @@ function Communicator.Disconnect(self: Communicator, name: string): ()
 	if not connection then
 		return
 	end
-	connections[name] = nil
+	self.Connections[name] = nil
 
 	local thread: thread? = connection.Thread
 	if thread then
@@ -107,27 +109,22 @@ function Module.new(player: Player): Communicator
 		Connections = {},
 	}, Communicator)
 
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.MoveCommunicator = communicator
+	tempData = Sift.Dictionary.set(tempData, "MoveCommunicator", communicator)
 	DataStore.UpdateTemporaryData(player, tempData)
-
-	communicators[player] = communicator
 
 	return communicator
 end
 
 function Module.Destroy(player: Player): ()
 	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	
 	local communicator: Communicator? = tempData.MoveCommunicator :: Communicator?
 	if not communicator then
 		error(`Player {player} doesn't have MoveCommunicator`)
 	end
 
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.MoveCommunicator = nil
+	tempData = Sift.Dictionary.removeKey(tempData, "MoveCommunicator")
 	DataStore.UpdateTemporaryData(player, tempData)
-
-	communicators[player] = nil
 end
 
 --// EVENT
@@ -136,19 +133,19 @@ MoveCommunication.listen(function(data, player: Player?)
 		return
 	end
 
-	local communicator: Communicator? = communicators[player]
+	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
+	local communicator: Communicator? = tempData.MoveCommunicator
 	if not communicator then
 		return
 	end
 
 	local connectionName: string = data.ConnectionName
-	local connections: { [string]: Connection } = communicator.Connections
-	local connection: Connection = connections[connectionName]
+	local connection: Connection = communicator.Connections[connectionName]
 	if not connection then
 		repeat
 			task.wait()
-			connection = connections[connectionName]
-		until connection or not communicators[player]
+			connection = communicator.Connections[connectionName]
+		until connection or player.Parent ~= Players
 	end
 
 	connection.Function(data.Data)

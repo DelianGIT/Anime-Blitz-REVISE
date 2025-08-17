@@ -52,7 +52,7 @@ function Module.Update(player: Player)
 	end
 
 	tempData = Sift.Dictionary.copy(tempData)
-	tempData.Perks[perkIdentifier] = perk.Apply(player)
+	tempData.Perks = Sift.Dictionary.set(tempData.Perks, perkIdentifier, perk.Apply(player))
 	DataStore.UpdateTemporaryData(player, tempData)
 end
 

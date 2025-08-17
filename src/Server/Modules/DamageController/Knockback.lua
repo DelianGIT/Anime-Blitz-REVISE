@@ -68,11 +68,10 @@ function Module.Apply(player: Player, unitVector: Vector3, params: Params)
 		end)
 	end
 
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.Knockback = {
+	tempData = Sift.Dictionary.set(tempData, "Knockback", {
 		StartTimestamp = startTimestamp,
 		Priority = priority,
-	}
+	})
 	DataStore.UpdateTemporaryData(player, tempData)
 
 	Apply.sendTo({
@@ -88,8 +87,7 @@ function Module.Cancel(player: Player)
 		return
 	end
 
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.Knockback = nil
+	tempData = Sift.Dictionary.set(tempData, "Knockback", nil)
 	DataStore.UpdateTemporaryData(player, tempData)
 
 	BodyMoversController.Destroy(player, "Knockback", "LinearVelocity")
@@ -101,8 +99,7 @@ end
 Charm.observe(CharacterController.Atom :: any, function(_, player: Player)
 	return function()
 		local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-		tempData = Sift.Dictionary.copy(tempData)
-		tempData.Knockback = nil
+		tempData = Sift.Dictionary.set(tempData, "Knockback", nil)
 		DataStore.UpdateTemporaryData(player, tempData)
 	end
 end)

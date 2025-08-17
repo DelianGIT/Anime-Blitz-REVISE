@@ -81,8 +81,7 @@ function Module.Create(player: Player, name: string, moverType: MoverType, param
 
 	allBodyMovers = Sift.Dictionary.set(allBodyMovers, moverType, bodyMovers)
 
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.BodyMovers = allBodyMovers :: any
+	tempData = Sift.Dictionary.set(tempData, "BodyMovers", allBodyMovers)
 	DataStore.UpdateTemporaryData(player, tempData)
 
 	CreateRemoteEvent.sendTo({
@@ -115,8 +114,7 @@ function Module.Destroy(player: Player, name: string, moverType: MoverType): ()
 
 	allBodyMovers = Sift.Dictionary.set(allBodyMovers, moverType, bodyMovers)
 	
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.BodyMovers = allBodyMovers :: any
+	tempData = Sift.Dictionary.set(tempData, "BodyMovers", allBodyMovers)
 	DataStore.UpdateTemporaryData(player, tempData)
 
 	DestroyRemoteEvent.sendTo({
@@ -128,10 +126,10 @@ end
 function Module._DestroyBodyMovers(player: Player): ()
 	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
 	local allBodyMovers: { [MoverType]: { [string]: BodyMover } } = tempData.BodyMovers :: any
-
-	for _, bodyMovers in pairs(allBodyMovers) do
-		table.clear(bodyMovers)
+	for moverType, _ in pairs(allBodyMovers) do
+		allBodyMovers = Sift.Dictionary.set(allBodyMovers, moverType, {})
 	end
+	DataStore.UpdateTemporaryData(player, tempData)
 end
 
 return Module

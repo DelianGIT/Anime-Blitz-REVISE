@@ -12,7 +12,7 @@ return ByteNet.defineNamespace("PlayerDataSync", function()
 			value = ByteNet.struct({
 				type = ByteNet.string,
 				data = ByteNet.struct({
-					PlayerData = ByteNet.unknown,
+					TemporaryData = ByteNet.unknown,
 					TeamA = ByteNet.optional(ByteNet.map(ByteNet.inst :: Player, ByteNet.bool)),
 					TeamB = ByteNet.optional(ByteNet.map(ByteNet.inst :: Player, ByteNet.bool))
 				})

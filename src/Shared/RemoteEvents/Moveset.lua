@@ -21,6 +21,13 @@ return ByteNet.defineNamespace("Moveset", function()
 				ConnectionName = ByteNet.string,
 				Data = ByteNet.unknown
 			})
+		}),
+
+		MoveControl = ByteNet.definePacket({
+			value = ByteNet.struct({
+				Action = ByteNet.string,
+				MoveName = ByteNet.string
+			})
 		})
 	}
 end)

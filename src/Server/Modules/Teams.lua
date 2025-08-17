@@ -33,8 +33,7 @@ function Module.Add(player: Player, team: "A" | "B"): ()
 		error(`Player is already in team {currentTeam}`)
 	end
 
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.Team = team
+	tempData = Sift.Dictionary.set(tempData, "Team", team)
 	DataStore.UpdateTemporaryData(player, tempData)
 
 	local atom: DataStore.Atom<boolean>
@@ -56,8 +55,7 @@ function Module.Remove(player: Player): ()
 		error(`Player isn't in team`)
 	end
 
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.Team = "None"
+	tempData = Sift.Dictionary.set(tempData, "Team", "None")
 	DataStore.UpdateTemporaryData(player, tempData)
 
 	local atom: DataStore.Atom<boolean>

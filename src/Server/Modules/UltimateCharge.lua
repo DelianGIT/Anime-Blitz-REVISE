@@ -29,8 +29,7 @@ function Module.Charge(player: Player, damageAmount: number): ()
 	local charge: number = tempData.UltimateCharge + damageAmount / unit
 	charge = math.clamp(charge, 0, 100)
 
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.UltimateCharge = charge
+	tempData = Sift.Dictionary.set(tempData, "UltimateCharge", charge)
 	DataStore.UpdateTemporaryData(player, tempData)
 end
 

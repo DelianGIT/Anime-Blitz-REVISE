@@ -4,7 +4,7 @@ local Track = require(script.Track)
 
 --// TYPES
 type Keyframe = Track.Keyframe
-type Track = Track.Track
+export type Track = Track.Track
 
 --// CLASS
 local Sequence = {}

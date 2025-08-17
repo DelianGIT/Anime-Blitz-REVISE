@@ -69,11 +69,11 @@ function Module.Apply(player: Player, params: Params): ()
 	end
 
 	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	tempData.Stun = {
+	tempData = Sift.Dictionary.set(tempData, "Stun", {
 		WalkSpeed = walkSpeed,
 		JumpPower = jumpPower,
 		StartTimestamp = startTimestamp,
-	}
+	})
 	DataStore.UpdateTemporaryData(player, tempData)
 
 	Apply.sendTo(params, player)
@@ -92,8 +92,7 @@ function Module.Cancel(player: Player): ()
 		HumanoidChanger.Cancel(player, "Stun")
 	end
 
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.Stun = nil
+	tempData = Sift.Dictionary.set(tempData, "Stun", nil)
 	DataStore.UpdateTemporaryData(player, tempData)
 
 	Cancel.sendTo(nil, player)

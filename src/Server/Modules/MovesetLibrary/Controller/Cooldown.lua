@@ -73,7 +73,7 @@ function Module.Stop(player: Player, name: string): ()
 	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
 
 	local cooldowns: { [string]: Cooldown } = tempData.Cooldowns
-	local cooldown: Cooldown? = tempData.Cooldowns[name]
+	local cooldown: Cooldown? = (tempData.Cooldowns :: any)[name]
 	if not cooldown then
 		error(`Can't find cooldown {name}`)
 	end
@@ -89,7 +89,7 @@ end
 function Module.IsOnCooldown(player: Player, name: string): boolean
 	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
 
-	local cooldown: Cooldown = tempData.Cooldowns[name]
+	local cooldown: Cooldown = (tempData.Cooldowns :: any)[name]
 	if not cooldown then
 		error(`Can't find cooldown {name}`)
 	end
@@ -108,7 +108,7 @@ end
 
 function Module.HasCooldown(player: Player, name: string): boolean
 	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	if tempData.Cooldowns[name] then
+	if (tempData.Cooldowns :: any)[name] then
 		return true
 	else
 		return false
