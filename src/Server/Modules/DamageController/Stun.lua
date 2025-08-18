@@ -10,9 +10,8 @@ local Charm = require(Packages.Charm)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local CharacterController = require(ServerModules.CharacterController)
 local HumanoidChanger = require(ServerModules.CharacterController.HumanoidChanger)
-local DataStore = require(ServerModules.DataStore)
+local PlayerData = require(ServerModules.PlayerData)
 
 --// REMOTE EVENTS
 local RemoteEvents = require(ReplicatedStorage.RemoteEvents.Stun)
@@ -32,6 +31,8 @@ type Stun = {
 }
 
 --// VARIABLES
+local stunAtom = PlayerData.Atoms.Stun
+
 local Module = {}
 
 --// MODULE FUNCTIONS
@@ -60,28 +61,26 @@ function Module.Apply(player: Player, params: Params): ()
 		startTimestamp = os.clock()
 
 		task.delay(duration, function()
-			local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-			local currentStun: Stun? = tempData.Stun
+			local currentStun: Stun? = stunAtom()[player]
 			if currentStun and currentStun.StartTimestamp == startTimestamp then
 				Module.Cancel(player)
 			end
 		end)
 	end
 
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	tempData = Sift.Dictionary.set(tempData, "Stun", {
-		WalkSpeed = walkSpeed,
-		JumpPower = jumpPower,
-		StartTimestamp = startTimestamp,
-	})
-	DataStore.UpdateTemporaryData(player, tempData)
+	stunAtom(function(state)
+		return Sift.Dictionary.set(state, player, {
+			WalkSpeed = walkSpeed,
+			JumpPower = jumpPower,
+			StartTimestamp = startTimestamp,
+		})
+	end)
 
 	Apply.sendTo(params, player)
 end
 
 function Module.Cancel(player: Player): ()
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local stun: Stun? = tempData.Stun
+	local stun: Stun? = stunAtom()[player]
 	if not stun then
 		return
 	end
@@ -92,19 +91,19 @@ function Module.Cancel(player: Player): ()
 		HumanoidChanger.Cancel(player, "Stun")
 	end
 
-	tempData = Sift.Dictionary.set(tempData, "Stun", nil)
-	DataStore.UpdateTemporaryData(player, tempData)
+	local state = stunAtom()
+	state = Sift.Dictionary.removeKey(state, player)
+	stunAtom(state)
 
 	Cancel.sendTo(nil, player)
 end
 
 --// EVENTS
-Charm.observe(CharacterController.Atom :: any, function(_, player: Player)
+Charm.observe(PlayerData.Atoms.Character :: any, function(_, player: Player)
 	return function()
-		local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-		tempData = Sift.Dictionary.copy(tempData)
-		tempData.Stun = nil
-		DataStore.UpdateTemporaryData(player, tempData)
+		local state = stunAtom()
+		state = Sift.Dictionary.removeKey(state, player)
+		stunAtom(state)
 	end
 end)
 

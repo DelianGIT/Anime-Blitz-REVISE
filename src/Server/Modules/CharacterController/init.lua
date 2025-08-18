@@ -7,12 +7,11 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 --// PACKAGES
 local Packages = ReplicatedStorage.Packages
-local Charm = require(Packages.Charm)
 local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local DataStore = require(ServerModules.DataStore)
+local PlayerData = require(ServerModules.PlayerData)
 
 local SharedModules = ReplicatedStorage.Modules
 local Utility = require(SharedModules.Utility)
@@ -26,11 +25,13 @@ local DEFAULT_SPAWN_POINT = workspace.SpawnPoint
 local SPAWN_OFFSET = CFrame.new(0, 3, 0)
 
 --// VARIABLES
+local spawnPointAtom = PlayerData.Atoms.SpawnPoint
+local characterDataAtom = PlayerData.Atoms.CharacterData
+local characterAtom = PlayerData.Atoms.Character
+
 local charactersFolder = workspace.Living.Players
 
 local assetsFolder = ReplicatedStorage.Assets.Characters
-
-local atom: Charm.Atom<{ [Player]: Model }> = Charm.atom({})
 
 local Module = {}
 
@@ -78,27 +79,22 @@ local function onDied(player: Player): ()
 	Module.Build(player)
 end
 
---// MODULE PROPERTIES
-Module.Atom = atom
-
 --// MODULE FUNCTIONS
 function Module.Build(player: Player): ()
 	local existingCharacter: Model? = player.Character
 	if existingCharacter then
 		existingCharacter:Destroy()
 		
-		atom(function(state: { [Player]: Model })
+		characterAtom(function(state: { [Player]: Model })
 			return Sift.Dictionary.removeKey(state, player)
 		end)
 	end
 
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-
-	local spawnPoint: BasePart = tempData.SpawnPoint or DEFAULT_SPAWN_POINT
+	local spawnPoint: BasePart = spawnPointAtom()[player] or DEFAULT_SPAWN_POINT
 	local spawnCFrame: CFrame = spawnPoint.CFrame * SPAWN_OFFSET
 
 	local newCharacter: Model, humanoid: Humanoid
-	local characterData = tempData.CharacterData
+	local characterData = characterDataAtom()[player]
 	if not characterData then
 		newCharacter, humanoid = buildDefaultCharacter(player, spawnCFrame)
 	else
@@ -106,7 +102,7 @@ function Module.Build(player: Player): ()
 		applyStats(humanoid, characterData.Stats)
 	end
 
-	atom(function(state: { [Player]: Model })
+	characterAtom(function(state: { [Player]: Model })
 		return Sift.Dictionary.set(state, player, newCharacter)
 	end)
 

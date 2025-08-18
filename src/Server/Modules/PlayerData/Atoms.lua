@@ -89,7 +89,13 @@ export type Atoms = {
 		WalkSpeed: number?,
 		JumpPower: number?,
 		StartTimestamp: number?,
-	}>
+	}>,
+
+	Loaded: Atom<boolean>,
+
+	Character: Atom<Model>,
+
+	SpawnPoint: Atom<BasePart>
 }
 
 --// ATOM NAMES
@@ -107,28 +113,10 @@ local atomNames: { string } = {
 	"Snapshot",
 	"RootCFrame",
 	"Knockback",
-	"Stun"
-}
-
---// DEFAULT VALUES
-local defaultValues = {
-	Team = "None",
-
-	Stats = {
-		UltimateCharge = 0,
-		Level = 0,
-		Experience = 0
-	},
-
-	MoveCooldowns = {},
-
-	Perks = {},
-
-	HumanoidChanges = {},
-
-	BodyMovers = {
-		LinearVelocity = {}
-	}
+	"Stun",
+	"Loaded",
+	"Character",
+	"SpawnPoint"
 }
 
 --// CREATING ATOMS
@@ -137,7 +125,4 @@ for _, atomName in ipairs(atomNames) do
 	(atoms :: any)[atomName] = Charm.atom({})
 end
 
-return {
-	Atoms = atoms,
-	DefaultValues = defaultValues
-}
+return atoms

@@ -11,8 +11,8 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local DataStore = require(ServerModules.DataStore)
-local CharacterController = require(ServerModules.CharacterController)
+local PlayerData = require(ServerModules.PlayerData)
+local LoadedPlayersList = require(ServerModules.LoadedPlayersList)
 
 local SharedModules = ReplicatedStorage.Modules
 local Snapshot = require(SharedModules.Snapshot)
@@ -48,9 +48,11 @@ local camera: Camera = workspace.CurrentCamera
 local charactersAssetsFolder: Folder = ReplicatedStorage.Assets.Characters
 local defaultRig: Model = ReplicatedStorage.Miscellaneous.Rig
 
-local charactersAtom: DataStore.Atom<Model> = CharacterController.Atom
-local snapshotsAtom: DataStore.Atom<Snapshot.Snapshot> = DataStore.Atoms.Snapshots
-local loadedPlayersList: { Player } = DataStore.LoadedPlayers
+local characterDataAtom = PlayerData.Atoms.CharacterData
+local characterAtom = PlayerData.Atoms.Character
+local snapshotsAtom = PlayerData.Atoms.Snapshot
+local loadedAtom = PlayerData.Atoms.Loaded
+local rootCFrameAtom = PlayerData.Atoms.RootCFrame
 
 local idStack: { number } = {}
 local playerIdMap: { [Player]: number } = {}
@@ -117,8 +119,7 @@ end
 
 local function addCharacter(player: Player, character: Model, id: number): ()
 	local replicator: Model
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local characterData = tempData.CharacterData
+	local characterData = characterDataAtom()[player]
 	if characterData then
 		local model: Model? = (charactersAssetsFolder :: any)[characterData.Name].Character
 		if model then
@@ -140,7 +141,7 @@ local function addCharacter(player: Player, character: Model, id: number): ()
 	AddCharacter.sendToList({
 		Id = id,
 		CharacterName = character.Name,
-	}, loadedPlayersList)
+	}, LoadedPlayersList)
 end
 
 local function removeCharacter(character: Model?, id: number): ()
@@ -156,7 +157,7 @@ local function removeCharacter(character: Model?, id: number): ()
 		RemoveCharacter.sendToList({
 			Id = id,
 			CharacterName = character.Name
-		}, loadedPlayersList)
+		}, LoadedPlayersList)
 	end
 end
 
@@ -178,14 +179,14 @@ local function getTickInterval(character: Model?, id: number): number
 		TickRateChanged.sendToList({
 			Id = id,
 			TickRate = newTickRate,
-		}, loadedPlayersList)
+		}, LoadedPlayersList)
 	end
 
 	return newTickRate
 end
 
 --// OBSERVERS
-Charm.observe(DataStore.TemporaryDataAtom :: any, function(_, player: Player)
+Charm.observe(loadedAtom :: any, function(_, player: Player)
 	local id: number = getNextId()
 	playerIdMap[player] = id
 
@@ -202,7 +203,7 @@ Charm.observe(DataStore.TemporaryDataAtom :: any, function(_, player: Player)
 
 	addExistingCharacters(player, id)
 
-	local character: Model? = charactersAtom()[player]
+	local character: Model? = characterAtom()[player]
 	if character then
 		addCharacter(player, character, id)
 	end
@@ -219,7 +220,7 @@ Charm.observe(DataStore.TemporaryDataAtom :: any, function(_, player: Player)
 	end
 end)
 
-Charm.observe(charactersAtom :: any, function(character: Model, player: Player)
+Charm.observe(characterAtom :: any, function(character: Model, player: Player)
 	local id: number = playerIdMap[player]
 	if not id then
 		return nil
@@ -250,10 +251,9 @@ ClientReplicateCFrame.listen(function(clientData, player: Player?)
 	local cframe: CFrame = clientData.CFrame
 	data.Snapshot:Push(timestamp, cframe)
 
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	tempData = Sift.Dictionary.copy(tempData)
-	tempData.RootCFrame = cframe
-	DataStore.UpdateTemporaryData(player, tempData)
+	rootCFrameAtom(function(state)
+		return Sift.Dictionary.set(state, player, cframe)
+	end)
 end)
 
 RunService.PostSimulation:Connect(function()
@@ -263,7 +263,7 @@ RunService.PostSimulation:Connect(function()
 	local timestamps: { [number]: number } = {}
 	local clock: number = os.clock()
 
-	local characters: { [Player]: Model } = charactersAtom()
+	local characters: { [Player]: Model } = characterAtom()
 	for player, character in pairs(characters) do
 		local humanoidRootPart: Part? = character:FindFirstChild("HumanoidRootPart") :: Part?
 		if not humanoidRootPart then
@@ -305,7 +305,7 @@ RunService.PostSimulation:Connect(function()
 	ServerReplicateCFrame.sendToList({
 		CFrames = cframes,
 		Timestamps = timestamps
-	}, loadedPlayersList)
+	}, LoadedPlayersList)
 
 	local humanoidRootParts: { Part } = {}
 	local targetCFrames: { CFrame } = {}

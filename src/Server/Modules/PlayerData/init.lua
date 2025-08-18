@@ -8,13 +8,11 @@ local Packages = ReplicatedStorage.Packages
 local Sift = require(Packages.Sift)
 
 --// MODULES
-local PersistentDataStore = require(script.Parent.PersistentDataStore)
-local TemporaryDataStore = require(script.Parent.TemporaryDataStore)
+local PersistentDataStore = require(script.PersistentDataStore)
+local Atoms = require(script.Atoms)
+local AtomsDefaultValues = require(script.AtomsDefaultValues)
 
 --// VARIABLES
-local temporaryDataAtoms = TemporaryDataStore.Atoms
-local temporaryDataDefaultValues = TemporaryDataStore.DefaultValues
-
 local inProcess: { [Player]: true } = {}
 
 --// EVENTS
@@ -26,8 +24,8 @@ Players.PlayerAdded:Connect(function(player: Player)
 	
 	PersistentDataStore:loadAsync(player)
 
-	for name, value in pairs(temporaryDataDefaultValues :: any) do
-		(temporaryDataAtoms :: any)[name](function(state)
+	for name, value in pairs(AtomsDefaultValues :: any) do
+		(Atoms :: any)[name](function(state)
 			if typeof(value) == "table" then
 				value = Sift.Dictionary.copyDeep(value)
 			end
@@ -44,7 +42,7 @@ Players.PlayerRemoving:Connect(function(player: Player)
 
 	PersistentDataStore:unloadAsync(player)
 
-	for _, atom in pairs(temporaryDataAtoms :: any) do
+	for _, atom in pairs(Atoms :: any) do
 		atom(function(state)
 			return Sift.Dictionary.removeKey(state, player)
 		end)
@@ -53,4 +51,7 @@ Players.PlayerRemoving:Connect(function(player: Player)
 	inProcess[player] = nil
 end)
 
-return true
+return {
+	Atoms = Atoms,
+	PersistentDataStore = PersistentDataStore
+}

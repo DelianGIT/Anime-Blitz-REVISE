@@ -6,7 +6,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local DataStore = require(ServerModules.DataStore)
+local PlayerData = require(ServerModules.PlayerData)
 local DamageController = require(ServerModules.DamageController)
 
 local SharedModules = ReplicatedStorage.Modules
@@ -23,7 +23,7 @@ local DESYNC_THRESHOLD = 3
 local MAX_DESYNC = 5
 
 --// VARIABLES
-local snapshotsAtom = DataStore.Atoms.Snapshots
+local snapshotAtom = PlayerData.Atoms.Snapshot
 
 local Module = {}
 
@@ -34,7 +34,7 @@ local function getDesyncMargin(humanoidRootPart: BasePart, latency: number): num
 end
 
 local function getRewindedCFrame(player: Player, humanoidRootPart: BasePart, hitTimestamp: number): CFrame?
-	local snapshot = (snapshotsAtom() :: any)[player]
+	local snapshot = (snapshotAtom() :: any)[player]
 	if not snapshot then
 		return nil
 	end

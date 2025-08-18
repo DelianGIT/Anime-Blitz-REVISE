@@ -5,84 +5,69 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 --// PACKAGES
 local Packages = ReplicatedStorage.Packages
+local Charm = require(Packages.Charm)
 local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local DataStore = require(ServerModules.DataStore)
+local PlayerData = require(ServerModules.PlayerData)
 
 --// TYPES
 type Team = "A" | "B" | "None"
 
 --// VARIABLES
-local sharedAtoms = DataStore.SharedAtoms
-local teamA: DataStore.Atom<boolean> = sharedAtoms.TeamA
-local teamB: DataStore.Atom<boolean> = sharedAtoms.TeamB
+local teamAtom = PlayerData.Atoms.Team
 
 local Module = {}
 
 --// MODULE PROPERTIES
-Module.TeamA = teamA
-Module.TeamB = teamB
+Module.TeamA = Charm.computed(function()
+	local teamMembers: { Player } = {}
+	for player, team in pairs(teamAtom()) do
+		if team == "A" then
+			table.insert(teamMembers, player)
+		end
+	end
+	return teamMembers
+end)
+
+Module.TeamB = Charm.computed(function()
+	local teamMembers: { Player } = {}
+	for player, team in pairs(teamAtom()) do
+		if team == "B" then
+			table.insert(teamMembers, player)
+		end
+	end
+	return teamMembers
+end)
 
 --// MODULE FUNCTIONS
 function Module.Add(player: Player, team: "A" | "B"): ()
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local currentTeam: Team? = tempData.Team
-	if currentTeam ~= "None" then
+	local currentTeam: Team = teamAtom()[player]
+	if currentTeam == "None" then
+		teamAtom(function(state)
+			return Sift.Dictionary.set(state, player, team :: Team)
+		end)
+	else
 		error(`Player is already in team {currentTeam}`)
 	end
-
-	tempData = Sift.Dictionary.set(tempData, "Team", team)
-	DataStore.UpdateTemporaryData(player, tempData)
-
-	local atom: DataStore.Atom<boolean>
-	if team == "A" then
-		atom = teamA
-	elseif team == "B" then
-		atom = teamB
-	end
-
-	atom(function(state: { [Player]: boolean })
-		return Sift.Set.add(state, player)
-	end)
 end
 
 function Module.Remove(player: Player): ()
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local currentTeam: Team? = tempData.Team
-	if not currentTeam then
-		error(`Player isn't in team`)
-	end
-
-	tempData = Sift.Dictionary.set(tempData, "Team", "None")
-	DataStore.UpdateTemporaryData(player, tempData)
-
-	local atom: DataStore.Atom<boolean>
-	if currentTeam == "A" then
-		atom = teamA
-	elseif currentTeam == "B" then
-		atom = teamB
-	end
-
-	atom(function(state: { [Player]: boolean })
-		return Sift.Set.delete(state, player)
-	end)
-end
-
-function Module.Get(player: Player): Team
-	if teamA()[player] then
-		return "A"
-	elseif teamB()[player] then
-		return "B"
+	local currentTeam: Team = teamAtom()[player]
+	if currentTeam ~= "None" then
+		teamAtom(function(state)
+			return Sift.Dictionary.set(state, player, "None" :: Team)
+		end)
 	else
-		return "None"
+		error(`Player isn't in team`)
 	end
 end
 
 function Module.AreInSame(player1: Player, player2: Player, noneIsDifferent: boolean?): boolean
-	local team1: Team = Module.Get(player1)
-	local team2: Team = Module.Get(player2)
+	local state: { [Player]: Team } = teamAtom()
+	local team1: Team = state[player1]
+	local team2: Team = state[player2]
 
 	if team1 == team2 then
 		if noneIsDifferent and team1 == "None" then

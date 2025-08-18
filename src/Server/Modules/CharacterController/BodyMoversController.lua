@@ -9,7 +9,7 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local DataStore = require(ServerModules.DataStore)
+local PlayerData = require(ServerModules.PlayerData)
 
 -- // REMOTE EVENTS
 local RemoteEvents = require(ReplicatedStorage.RemoteEvents.BodyMoversController)
@@ -28,8 +28,11 @@ type BodyMover = {
 	Priority: number,
 	StartTimestamp: number?,
 }
+type AllBodyMovers = { [MoverType]: { [string]: BodyMover } }
 
 --// VARIABLES
+local bodyMoversAtom = PlayerData.Atoms.BodyMovers :: any
+
 local Module = {}
 
 --// MODULE FUNCTIONS
@@ -44,8 +47,7 @@ function Module.Create(player: Player, name: string, moverType: MoverType, param
 		error(`{player}'s HumanoidRootPart doesn't exist for {moverType}_{name}`)
 	end
 
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local allBodyMovers: { [MoverType]: { [string]: BodyMover } } = tempData.BodyMovers :: any
+	local allBodyMovers: AllBodyMovers = bodyMoversAtom()[player]
 	
 	local bodyMovers: { [string]: BodyMover }? = allBodyMovers[moverType]
 	if not bodyMovers then
@@ -64,8 +66,7 @@ function Module.Create(player: Player, name: string, moverType: MoverType, param
 		startTimestamp = os.clock()
 
 		task.delay(duration, function()
-			tempData = DataStore.GetTemporaryData(player)
-			allBodyMovers = tempData.BodyMovers :: any
+			allBodyMovers = bodyMoversAtom()[player]
 
 			local currentMover: BodyMover = allBodyMovers[moverType][name]
 			if currentMover and currentMover.StartTimestamp == startTimestamp then
@@ -80,9 +81,9 @@ function Module.Create(player: Player, name: string, moverType: MoverType, param
 	})
 
 	allBodyMovers = Sift.Dictionary.set(allBodyMovers, moverType, bodyMovers)
-
-	tempData = Sift.Dictionary.set(tempData, "BodyMovers", allBodyMovers)
-	DataStore.UpdateTemporaryData(player, tempData)
+	bodyMoversAtom(function(state)
+		return Sift.Dictionary.set(state, player, allBodyMovers)
+	end)
 
 	CreateRemoteEvent.sendTo({
 		Name = name,
@@ -102,8 +103,7 @@ function Module.Destroy(player: Player, name: string, moverType: MoverType): ()
 		error(`{player}'s HumanoidRootPart doesn't exist for {moverType}_{name}`)
 	end
 
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local allBodyMovers: { [MoverType]: { [string]: BodyMover } } = tempData.BodyMovers :: any
+	local allBodyMovers: { [MoverType]: { [string]: BodyMover } } = bodyMoversAtom()[player]
 	
 	local bodyMovers: { [string]: BodyMover }? = allBodyMovers[moverType]
 	if not bodyMovers then
@@ -113,9 +113,9 @@ function Module.Destroy(player: Player, name: string, moverType: MoverType): ()
 	bodyMovers = Sift.Dictionary.removeKey(bodyMovers, name)
 
 	allBodyMovers = Sift.Dictionary.set(allBodyMovers, moverType, bodyMovers)
-	
-	tempData = Sift.Dictionary.set(tempData, "BodyMovers", allBodyMovers)
-	DataStore.UpdateTemporaryData(player, tempData)
+	bodyMoversAtom(function(state)
+		return Sift.Dictionary.set(state, player, allBodyMovers)
+	end)
 
 	DestroyRemoteEvent.sendTo({
 		Name = name,
@@ -124,12 +124,13 @@ function Module.Destroy(player: Player, name: string, moverType: MoverType): ()
 end
 
 function Module._DestroyBodyMovers(player: Player): ()
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local allBodyMovers: { [MoverType]: { [string]: BodyMover } } = tempData.BodyMovers :: any
-	for moverType, _ in pairs(allBodyMovers) do
-		allBodyMovers = Sift.Dictionary.set(allBodyMovers, moverType, {})
-	end
-	DataStore.UpdateTemporaryData(player, tempData)
+	bodyMoversAtom(function(state)
+		local allBodyMovers: AllBodyMovers = state[player]
+		for moverType, _ in pairs(allBodyMovers) do
+			allBodyMovers = Sift.Dictionary.set(allBodyMovers, moverType, {})
+		end
+		return Sift.Dictionary.set(state, player, allBodyMovers)
+	end)
 end
 
 return Module

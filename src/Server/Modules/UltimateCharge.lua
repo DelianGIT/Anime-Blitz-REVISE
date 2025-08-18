@@ -9,28 +9,35 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local DataStore = require(ServerModules.DataStore)
+local PlayerData = require(ServerModules.PlayerData)
 
 --// CONSTANTS
 local UNITS = {}
 
 --// VARIABLES
+local characterDataAtom = PlayerData.Atoms.CharacterData
+local statsAtom = PlayerData.Atoms.Stats
+
 local Module = {}
 
 --// MODULE FUNCTIONS
 function Module.Charge(player: Player, damageAmount: number): ()
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local characterData = tempData.CharacterData
+	local characterData = characterDataAtom()[player]
 	if not characterData then
 		return
 	end
 
+	local stats = statsAtom()[player]
+
 	local unit: number = UNITS[characterData.Category]
-	local charge: number = tempData.UltimateCharge + damageAmount / unit
+	local charge: number = stats.UltimateCharge + damageAmount / unit
 	charge = math.clamp(charge, 0, 100)
 
-	tempData = Sift.Dictionary.set(tempData, "UltimateCharge", charge)
-	DataStore.UpdateTemporaryData(player, tempData)
+	stats = Sift.Dictionary.copy(stats)
+	stats.UltimateCharge = charge
+	statsAtom(function(state)
+		return Sift.Dictionary.set(state, player, stats)
+	end)
 end
 
 return Module

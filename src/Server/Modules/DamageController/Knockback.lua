@@ -10,8 +10,7 @@ local Charm = require(Packages.Charm)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local DataStore = require(ServerModules.DataStore)
-local CharacterController = require(ServerModules.CharacterController)
+local PlayerData = require(ServerModules.PlayerData)
 local BodyMoversController = require(ServerModules.CharacterController.BodyMoversController)
 
 --// REMOTE EVENTS
@@ -32,6 +31,8 @@ type Knockback = {
 }
 
 --// VARIABLES
+local knockbackAtom = PlayerData.Atoms.Knockback
+
 local Module = {}
 
 --// MODULE FUNCTIONS
@@ -43,8 +44,7 @@ function Module.Apply(player: Player, unitVector: Vector3, params: Params)
 	end
 
 	local priority: number = params.Priority
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local existingKnockback: Knockback? = tempData.Knockback
+	local existingKnockback: Knockback? = knockbackAtom()[player]
 	if existingKnockback and existingKnockback.Priority > priority then
 		warn(`Exists knockback with higher priority: {existingKnockback.Priority} > {priority}`)
 		return
@@ -60,19 +60,19 @@ function Module.Apply(player: Player, unitVector: Vector3, params: Params)
 		startTimestamp = os.clock()
 
 		task.delay(duration, function()
-			tempData = DataStore.GetTemporaryData(player)
-			local currentKnockback: Knockback? = tempData.Knockback
+			local currentKnockback: Knockback? = knockbackAtom()[player]
 			if currentKnockback and currentKnockback.StartTimestamp == startTimestamp then
 				Module.Cancel(player)
 			end
 		end)
 	end
 
-	tempData = Sift.Dictionary.set(tempData, "Knockback", {
-		StartTimestamp = startTimestamp,
-		Priority = priority,
-	})
-	DataStore.UpdateTemporaryData(player, tempData)
+	knockbackAtom(function(state)
+		return Sift.Dictionary.set(state, player, {
+			StartTimestamp = startTimestamp,
+			Priority = priority,
+		})
+	end)
 
 	Apply.sendTo({
 		UnitVector = unitVector,
@@ -81,14 +81,14 @@ function Module.Apply(player: Player, unitVector: Vector3, params: Params)
 end
 
 function Module.Cancel(player: Player)
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local knockback: Knockback? = tempData.Knockback
+	local knockback: Knockback? = knockbackAtom()[player]
 	if not knockback then
 		return
 	end
 
-	tempData = Sift.Dictionary.set(tempData, "Knockback", nil)
-	DataStore.UpdateTemporaryData(player, tempData)
+	local state = knockbackAtom()
+	state = Sift.Dictionary.removeKey(state, player)
+	knockbackAtom(state)
 
 	BodyMoversController.Destroy(player, "Knockback", "LinearVelocity")
 
@@ -96,11 +96,11 @@ function Module.Cancel(player: Player)
 end
 
 --// EVENTS
-Charm.observe(CharacterController.Atom :: any, function(_, player: Player)
+Charm.observe(PlayerData.Atoms.Character :: any, function(_, player: Player)
 	return function()
-		local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-		tempData = Sift.Dictionary.set(tempData, "Knockback", nil)
-		DataStore.UpdateTemporaryData(player, tempData)
+		local state = knockbackAtom()
+		state = Sift.Dictionary.removeKey(state, player)
+		knockbackAtom(state)
 	end
 end)
 

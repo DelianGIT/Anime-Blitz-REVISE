@@ -5,7 +5,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local DataStore = require(ServerModules.DataStore)
+local LoadedPlayersList = require(ServerModules.LoadedPlayersList)
 
 --// REMOTE EVENTS
 local RemoteEvents = ReplicatedStorage.RemoteEvents
@@ -22,8 +22,6 @@ type Identifier = {
 local RENDER_DISTANCE = 1024
 
 --// VARIABLES
-local loadedPlayers: { Player } = DataStore.LoadedPlayers
-
 local Module = {}
 
 --// FUNCTIONS
@@ -37,7 +35,7 @@ end
 
 --// MODULE FUNCTIONS
 function Module.Cast(player: Player, caster: Model, identifier: Identifier, origin: Vector3?, data: any?)
-	if DataStore.IsLoaded(player) and canCast(player, origin) then
+	if table.find(LoadedPlayersList, player) and canCast(player, origin) then
 		RemoteEvent.sendTo({
 			Caster = caster,
 			Identifier = identifier,
@@ -56,13 +54,13 @@ function Module.CastForAll(caster: Model, identifier: Identifier, origin: Vector
 	}
 
 	if blacklist then
-		for _, player in ipairs(loadedPlayers) do
+		for _, player in ipairs(LoadedPlayersList) do
 			if not table.find(blacklist, player) and canCast(player, origin) then
 				RemoteEvent.sendTo(dataToSend, player)
 			end
 		end
 	else
-		for _, player in ipairs(loadedPlayers) do
+		for _, player in ipairs(LoadedPlayersList) do
 			if canCast(player, origin) then
 				RemoteEvent.sendTo(dataToSend, player)
 			end

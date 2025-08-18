@@ -4,8 +4,8 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 --// TYPES
 export type Perk = {
-	Apply: (Player) -> (),
-	Remove: (Player) -> ()
+	Apply: (Player) -> boolean,
+	Remove: (Player) -> boolean
 }
 export type Perks = { [number]: Perk }
 export type Pack = { [number]: Perks }
