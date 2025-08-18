@@ -10,13 +10,8 @@ local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
 
---// PACKAGES
-local Packages = ReplicatedStorage.Packages
-local Sift = require(Packages.Sift)
-
 --// MODULES
 local ClientModules = ReplicatedFirst.Modules
-local DataStore = require(ClientModules.DataStore)
 
 --// REMOTE EVENTS
 local RemoteEvents = require(ReplicatedStorage.RemoteEvents.ClientLoaded)
@@ -71,11 +66,8 @@ end
 --// REQUIRING SCRIPTS
 requireFolder(script)
 
---// WAITING FOR THE INITIAL STATE
-local temporaryDataAtom: DataStore.TemporaryDataAtom = DataStore.TemporaryDataAtom
-repeat
-	task.wait()
-until not Sift.isEmpty(temporaryDataAtom() :: any)
+--// SYNCING SHARED PLAYER DATA
+require(ClientModules.SharedPlayerData)
 
 RemoteEvent.send()
 

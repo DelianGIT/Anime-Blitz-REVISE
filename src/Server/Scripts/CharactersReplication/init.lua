@@ -48,7 +48,7 @@ local camera: Camera = workspace.CurrentCamera
 local charactersAssetsFolder: Folder = ReplicatedStorage.Assets.Characters
 local defaultRig: Model = ReplicatedStorage.Miscellaneous.Rig
 
-local characterDataAtom = PlayerData.Atoms.CharacterData
+local characterDataAtom = PlayerData.SharedAtoms.CharacterData
 local characterAtom = PlayerData.Atoms.Character
 local snapshotsAtom = PlayerData.Atoms.Snapshot
 local loadedAtom = PlayerData.Atoms.Loaded

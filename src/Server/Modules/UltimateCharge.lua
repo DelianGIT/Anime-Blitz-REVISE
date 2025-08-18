@@ -15,7 +15,7 @@ local PlayerData = require(ServerModules.PlayerData)
 local UNITS = {}
 
 --// VARIABLES
-local characterDataAtom = PlayerData.Atoms.CharacterData
+local characterDataAtom = PlayerData.SharedAtoms.CharacterData
 local statsAtom = PlayerData.Atoms.Stats
 
 local Module = {}

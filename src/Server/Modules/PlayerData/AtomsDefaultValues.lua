@@ -1,8 +1,6 @@
 --!strict
 --// DEFAULT VALUES
 return {
-	Team = "None",
-
 	Stats = {
 		UltimateCharge = 0,
 		Level = 0,

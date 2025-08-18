@@ -26,7 +26,7 @@ local SPAWN_OFFSET = CFrame.new(0, 3, 0)
 
 --// VARIABLES
 local spawnPointAtom = PlayerData.Atoms.SpawnPoint
-local characterDataAtom = PlayerData.Atoms.CharacterData
+local characterDataAtom = PlayerData.SharedAtoms.CharacterData
 local characterAtom = PlayerData.Atoms.Character
 
 local charactersFolder = workspace.Living.Players

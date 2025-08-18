@@ -10,10 +10,10 @@ local Charm = require(Packages.Charm)
 
 --// MODULES
 local ClientModules = ReplicatedFirst.Modules
-local DataStore = require(ClientModules.DataStore)
+local SharedPlayerData = require(ClientModules.SharedPlayerData)
 
 --// TYPES
-type Team = "A" | "B" | "B"
+type Team = "A" | "B" | "None"
 
 --// VARIABLES
 local localPlayer: Player = Players.LocalPlayer
@@ -26,34 +26,21 @@ local greenHighlight: Highlight = assetsFolder.Green
 local redHighlight: Highlight = assetsFolder.Red
 local whiteHighlight: Highlight = assetsFolder.White
 
-local temporaryDataAtom: DataStore.TemporaryDataAtom = DataStore.TemporaryDataAtom
-local teamAAtom: DataStore.Atom<boolean> = DataStore.SharedAtoms.TeamA
-local teamBAtom: DataStore.Atom<boolean> = DataStore.SharedAtoms.TeamB
+local teamAtom = SharedPlayerData.Team
 
 local myTeam: Team
 
+--// DERIVING TEAM ATOM BY PLAYER NAMES
+local derivedTeamAtom = Charm.computed(function()
+	local state: { [string]: Team } = {}
+	for player, team in pairs(teamAtom()) do
+		state[player.Name] = team
+	end
+	return state
+end)
+
 --// FUNCTIONS
-local function getCharacterTeam(character: Model): Team?
-	local targetName: string = character.Name
-	for player, _ in pairs(teamAAtom()) do
-		if player.Name == targetName then
-			return "A"
-		end
-	end
-	for player, _ in pairs(teamBAtom()) do
-		if player.Name == targetName then
-			return "B"
-		end
-	end
-	return nil
-end
-
-local function addHighlight(character: Model): ()
-	local team: Team? = getCharacterTeam(character :: Model)
-	if not team then
-		return
-	end
-
+local function addHighlight(character: Model, team: Team): ()
 	local existingHighlight: Highlight? = character:FindFirstChild("TeamHighlight") :: Highlight?
 	if existingHighlight then
 		existingHighlight:Destroy()
@@ -78,22 +65,22 @@ local function addHighlight(character: Model): ()
 end
 
 --// EVENTS
-Charm.subscribe(function()
-	return temporaryDataAtom().Team
-end, function(team: Team)
-	myTeam = team
+Charm.subscribe(derivedTeamAtom :: any, function(state: { [string]: Team })
+	myTeam = state[localPlayerName]
 
 	for _, character in ipairs(charactersFolder:GetChildren()) do
-		if localPlayerName ~= character.Name then
-			addHighlight(character :: Model)
+		local characterName: string = character.Name
+		if localPlayerName ~= characterName and character:IsA("Model") then
+			addHighlight(character :: Model, state[characterName])
 		end
 	end
 end)
 
 --// OBSERVERS
 charactersFolder.ChildAdded:Connect(function(character: Instance)
-	if localPlayerName ~= character.Name or not character:IsA("Model") then
-		addHighlight(character :: any)
+	local characterName: string = character.Name
+	if localPlayerName ~= characterName and character:IsA("Model") then
+		addHighlight(character :: Model, derivedTeamAtom()[characterName])
 	end
 end)
 

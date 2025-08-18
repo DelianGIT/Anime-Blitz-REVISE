@@ -6,15 +6,20 @@ local Packages = ReplicatedStorage.Packages
 local ByteNet = require(Packages.ByteNet)
 
 --// REMOTE EVENT
-return ByteNet.defineNamespace("PlayerDataSync", function()
+return ByteNet.defineNamespace("SharedAtomsSync", function()
 	return {
 		Sync = ByteNet.definePacket({
 			value = ByteNet.struct({
 				type = ByteNet.string,
 				data = ByteNet.struct({
-					TemporaryData = ByteNet.unknown,
-					TeamA = ByteNet.optional(ByteNet.map(ByteNet.inst :: Player, ByteNet.bool)),
-					TeamB = ByteNet.optional(ByteNet.map(ByteNet.inst :: Player, ByteNet.bool))
+					Team = ByteNet.map(ByteNet.inst :: Player, ByteNet.string :: ("A" | "B" | "None")),
+					CharacterData = ByteNet.optional(ByteNet.struct({
+						Name = ByteNet.string,
+						Category = ByteNet.string,
+						Properties = ByteNet.struct({
+							Health = ByteNet.uint8
+						})
+					}))
 				})
 			})
 		}),

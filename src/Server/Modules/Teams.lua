@@ -16,7 +16,7 @@ local PlayerData = require(ServerModules.PlayerData)
 type Team = "A" | "B" | "None"
 
 --// VARIABLES
-local teamAtom = PlayerData.Atoms.Team
+local teamAtom = PlayerData.SharedAtoms.Team
 
 local Module = {}
 

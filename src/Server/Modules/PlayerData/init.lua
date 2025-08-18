@@ -11,21 +11,28 @@ local Sift = require(Packages.Sift)
 local PersistentDataStore = require(script.PersistentDataStore)
 local Atoms = require(script.Atoms)
 local AtomsDefaultValues = require(script.AtomsDefaultValues)
+local SharedAtoms = require(script.SharedAtoms)
+local SharedAtomsDefaultValues = require(script.SharedAtomsDefaultValues)
+local Syncer = require(script.Syncer)
 
 --// VARIABLES
-local inProcess: { [Player]: true } = {}
+local loadedDataPlayers: { [Player]: boolean } = {}
 
---// EVENTS
-Players.PlayerAdded:Connect(function(player: Player)
-	if inProcess[player] then
-		player:Kick("Error while loading data")
+--// INITIALIZING ATOMS SYNCER
+Syncer.Init(loadedDataPlayers)
+
+--// FUNCTIONS
+local function removePlayerFromAtoms(player: Player, atoms: any): ()
+	for _, atom in pairs(atoms) do
+		atom(function(state)
+			return Sift.Dictionary.removeKey(state, player)
+		end)
 	end
-	inProcess[player] = true
-	
-	PersistentDataStore:loadAsync(player)
+end
 
-	for name, value in pairs(AtomsDefaultValues :: any) do
-		(Atoms :: any)[name](function(state)
+local function setDefaultValues(player: Player, atoms: any, defaultValues: any): ()
+	for name, value in pairs(defaultValues) do
+		atoms[name](function(state)
 			if typeof(value) == "table" then
 				value = Sift.Dictionary.copyDeep(value)
 			end
@@ -33,25 +40,31 @@ Players.PlayerAdded:Connect(function(player: Player)
 			return Sift.Dictionary.set(state, player, value)
 		end)
 	end
+end
+
+--// EVENTS
+Players.PlayerAdded:Connect(function(player: Player)
+	loadedDataPlayers[player] = false
+	
+	--PersistentDataStore:loadAsync(player)
+
+	setDefaultValues(player, Atoms, AtomsDefaultValues)
+	setDefaultValues(player, SharedAtoms, SharedAtomsDefaultValues)
+
+	loadedDataPlayers[player] = true
 end)
 
 Players.PlayerRemoving:Connect(function(player: Player)
-	if not inProcess[player] then
-		return
-	end
+	--PersistentDataStore:unloadAsync(player)
 
-	PersistentDataStore:unloadAsync(player)
+	removePlayerFromAtoms(player, Atoms)
+	removePlayerFromAtoms(player, SharedAtoms)
 
-	for _, atom in pairs(Atoms :: any) do
-		atom(function(state)
-			return Sift.Dictionary.removeKey(state, player)
-		end)
-	end
-
-	inProcess[player] = nil
+	loadedDataPlayers[player] = nil
 end)
 
 return {
 	Atoms = Atoms,
+	SharedAtoms = SharedAtoms,
 	PersistentDataStore = PersistentDataStore
 }

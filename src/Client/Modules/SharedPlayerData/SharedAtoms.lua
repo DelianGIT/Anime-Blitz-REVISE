@@ -10,15 +10,15 @@ local Charm = require(Packages.Charm)
 type Atom<T> = Charm.Atom<T>
 
 --// ATOMS
-local team: Charm.Atom<{ [Player]: "A" | "B" | "None" }> = Charm.atom({})
+local team: Atom<{ [Player]: "A" | "B" | "None" }> = Charm.atom({})
 
-local characterData: Charm.Atom<{ [Player]: {
+local characterData: Atom<{
 	Name: string,
 	Category: string,
 	Properties: {
 		Health: number
 	}
-} }> = Charm.atom({})
+}?> = Charm.atom() :: any
 
 return {
 	Team = team,

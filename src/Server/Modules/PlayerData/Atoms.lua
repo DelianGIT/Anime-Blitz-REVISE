@@ -18,16 +18,6 @@ local Snapshot = require(SharedModules.Snapshot)
 export type Atom<T> = Charm.Atom<{ [Player]: T }>
 
 export type Atoms = {
-	Team: Atom<"A" | "B" | "None">,
-
-	CharacterData: Atom<{
-		Name: string,
-		Category: string,
-		Stats: {
-			Health: number
-		}
-	}>,
-
 	Stats: Atom<{
 		UltimateCharge: number,
 		Level: number,
@@ -100,8 +90,6 @@ export type Atoms = {
 
 --// ATOM NAMES
 local atomNames: { string } = {
-	"Team",
-	"CharacterData",
 	"Stats",
 	"Moveset",
 	"MoveCommunicator",

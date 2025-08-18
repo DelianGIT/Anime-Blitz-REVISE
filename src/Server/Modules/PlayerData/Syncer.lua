@@ -4,56 +4,45 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 --// PACKAGES
 local Packages = ReplicatedStorage.Packages
-local CharmSync = require(Packages.CharmSync)
 local Sift = require(Packages.Sift)
+local CharmSync = require(Packages.CharmSync)
 
 --// MODULES
-local SharedModules = ReplicatedStorage.Modules
-local SharedPlayerDataFields = require(SharedModules.SharedPlayerDataFields)
-
-local Atoms = require(script.Parent.Atoms)
+local SharedAtoms = require(script.Parent.SharedAtoms)
 
 --// REMOTE EVENTS
-local RemoteEvents = require(ReplicatedStorage.RemoteEvents.DataSync)
+local RemoteEvents = require(ReplicatedStorage.RemoteEvents.SharedAtomsSync)
 local Sync = RemoteEvents.Sync
 local Request = RemoteEvents.Request
 
 --// VARIABLES
-local sharedAtoms = Sift.Dictionary.withKeys(Atoms :: any, table.unpack(SharedPlayerDataFields))
+local loadedDataPlayers: { [Player]: boolean } = {}
+local Module = {}
 
 --// FUNCTIONS
-local function filterTempData(tempData: TemporaryDataTemplate.Data): any
-	return Sift.Dictionary.withKeys(tempData :: any, table.unpack(SharedTemporaryDataFields))
-end
-
-local function filterPayload(player: Player, payload: any)
-	local payloadData = Sift.Dictionary.copy(payload.data)
+local function filterPayload(player: Player, payload: any): any
 	payload = Sift.Dictionary.copy(payload)
+
+	local payloadData = Sift.Dictionary.copy(payload.data)
 	payload.data = payloadData
 
-	local tempData: TemporaryDataTemplate.Data?
-	local allTempData: { [Player]: TemporaryDataTemplate.Data }? = payloadData.TemporaryData
-	if allTempData then
-		tempData = allTempData[player]
-
-		if tempData then
-			tempData = filterTempData(tempData)
-			if Sift.isEmpty(tempData) then
-				tempData = nil
-			end
-		end
-
-		payloadData.TemporaryData = tempData
+	local characterData = payloadData.CharacterData
+	if characterData then
+		characterData = (characterData :: any)[player]
 	end
-
+	payloadData.CharacterData = characterData
+	
 	return payload
+end
+
+--// MODULE FUNCTIONS
+function Module.Init(_loadedDataPlayers: { [Player]: boolean })
+	loadedDataPlayers = _loadedDataPlayers
 end
 
 --// SYNCER
 local syncer = CharmSync.server({
-	atoms = Sift.Dictionary.merge({
-		TemporaryData = temporaryDataAtom
-	}, sharedAtoms) :: any,
+	atoms = SharedAtoms :: any,
 	interval = 0,
 	preserveHistory = false,
 	autoSerialize = false,
@@ -61,18 +50,8 @@ local syncer = CharmSync.server({
 
 syncer:connect(function(player: Player, payload: any)
 	payload = filterPayload(player, payload)
-	if Sift.isEmpty(payload.data) then
-		return
-	end
-
-	local dataSynced: boolean? = dataSyncedPlayers()[player]
-	if dataSynced == true then
-		Sync.sendTo(payload :: any, player)
-	elseif dataSynced == false and payload.data.TemporaryData then
-		dataSyncedPlayers(function(state: { [Player]: boolean })
-			return Sift.Dictionary.set(state, player, true)
-		end)
-		syncer:hydrate(player)
+	if not Sift.isEmpty(payload.data) then
+		Sync.sendTo(payload, player)
 	end
 end)
 
@@ -82,18 +61,19 @@ Request.listen(function(_, player: Player?)
 		return
 	end
 
-	local tempData: TemporaryDataTemplate.Data? = temporaryDataAtom()[player]
-	if not tempData then
-		dataSyncedPlayers(function(state: { [Player]: boolean })
-			return Sift.Dictionary.set(state, player, false)
-		end)
-	else
-		dataSyncedPlayers(function(state: { [Player]: boolean })
-			return Sift.Dictionary.set(state, player, true)
-		end)
+	local isDataLoaded: boolean? = loadedDataPlayers[player]
+	if isDataLoaded ~= true then
+		repeat
+			task.wait()
+			isDataLoaded = loadedDataPlayers[player]
+		until isDataLoaded or isDataLoaded == nil
 
-		syncer:hydrate(player)
+		if isDataLoaded == nil then
+			return
+		end
 	end
+
+	syncer:hydrate(player)
 end)
 
-return true
+return Module
