@@ -3,36 +3,11 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+--// MODULES
+local Types = require(script.Parent.Types)
+
 --// TYPES
-export type Args = {
-	Player: Player,
-	Character: Model,
-	MoveData: MoveData,
-	Cache: { [any]: any },
-	Communicator: any,
-	Data: any
-}
-export type CooldownType = "Start" | "End" | "Manual"
-export type Cooldown = {
-	Type: CooldownType,
-	Duration: number,
-}
-export type MoveData = {
-	Duration: number,
-	Cooldown: Cooldown?,
-	StartIsSequence: boolean?,
-	EndIsSequence: boolean?,
-}
-export type MoveFunctions = {
-	Start: (Args) -> (),
-	End: (Args) -> (),
-	Cancel: (Args) -> (),
-}
-export type Move = {
-	Data: MoveData,
-	Functions: MoveFunctions,
-}
-export type Moves = { [string]: Move }
+type Moves = Types.Moves
 
 --// VARIABLES
 local movesetsFolder: Folder = ServerScriptService.Movesets

@@ -9,7 +9,7 @@ local Charm = require(Packages.Charm)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local Sequence = require(ServerModules.Sequence)
+local MovesetLibraryTypes = require(ServerModules.MovesetLibrary.Types)
 
 local SharedModules = ReplicatedStorage.Modules
 local Snapshot = require(SharedModules.Snapshot)
@@ -24,28 +24,8 @@ export type Atoms = {
 		Experience: number,
 	}>,
 
-	Moveset: Atom<{
-		Name: string,
-		Moves: { [string]: any }
-	}>,
-
-	MoveCommunicator: Atom<any>,
-
-	MoveCooldowns: Atom<{ [string]: {
-		Duration: number,
-		StartTimestamp: number,
-		TempDuration: number?
-	} }>,
-
-	ActiveMove: Atom<{
-		Name: string,
-		State: "Start" | "ReadyToEnd" | "End" | "Cancel",
-		StartTimestamp: number?,
-		Cache: { [any]: any },
-		Cancelled: boolean?,
-		RequestedEnd: boolean?,
-		Track: Sequence.Track?
-	}>,
+	Moveset: Atom<MovesetLibraryTypes.Moveset>,
+	ActiveMove: Atom<MovesetLibraryTypes.ActiveMove>,
 
 	Perks: Atom<{ [string]: boolean }>,
 
@@ -92,8 +72,6 @@ export type Atoms = {
 local atomNames: { string } = {
 	"Stats",
 	"Moveset",
-	"MoveCommunicator",
-	"MoveCooldowns",
 	"ActiveMove",
 	"Perks",
 	"HumanoidChanges",
