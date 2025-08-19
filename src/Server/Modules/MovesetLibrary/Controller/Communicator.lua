@@ -1,20 +1,17 @@
 --!strict
 --// SERVICES
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
---// PACKAGES
-local Packages = ReplicatedStorage.Packages
-local Sift = require(Packages.Sift)
-
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local DataStore = require(ServerModules.DataStore)
+local PlayerData = require(ServerModules.PlayerData)
 
---// REMOTE EVENT
-local RemoteEvents = ReplicatedStorage.RemoteEvents
-local MoveCommunication = require(RemoteEvents.Moveset).MoveCommunication
+local Types = require(script.Parent.Parent.Types)
+
+--// REMOTE EVENTS
+local RemoteEvents = require(ReplicatedStorage.RemoteEvents.Moveset)
+local RemoteEvent = RemoteEvents.MoveCommunication
 
 --// TYPES
 type Function = (...any) -> ()
@@ -34,60 +31,53 @@ type CommunicatorData = {
 export type Communicator = typeof(setmetatable({} :: CommunicatorData, Communicator))
 
 --// VARIABLES
+local movesetAtom = PlayerData.Atoms.Moveset
+
 local Module = {}
 
 --// CLASS FUNCTIONS
 function Communicator.Fire(self: Communicator, connectionName: string, ...: any): ()
-	MoveCommunication.sendTo({
+	RemoteEvent.sendTo({
 		ConnectionName = connectionName,
-		Data = ...,
+		Data = ...
 	}, self.Player)
 end
 
-function Communicator.Connect(self: Communicator, name: string, functionToConnect: Function): ()
-	self.Connections[name] = {
+function Communicator.Connect(self: Communicator, connectionName: string, functionToConnect: Function): ()
+	self.Connections[connectionName] = {
 		Function = functionToConnect
-	} :: Connection
+	}
 end
 
-function Communicator.Once(self: Communicator, name: string, functionToConnect: Function): ()
-	self.Connections[name] = {
+function Communicator.Once(self: Communicator, connectionName: string, functionToConnect: Function): ()
+	self.Connections[connectionName] = {
 		Function = function(...: any)
-			self.Connections = Sift.Dictionary.removeKey(self.Connections, name)
-			
-			if functionToConnect then
-				functionToConnect(...)
-			end
+			self:Disconnect(connectionName)
+			functionToConnect(...)
 		end
-	} :: Connection
+	}
 end
 
-function Communicator.Wait(self: Communicator, name: string, functionToConnect: Function): ()
+function Communicator.Wait(self: Communicator, connectionName: string): ()
 	local thread: thread = coroutine.running()
-	
-	self.Connections[name] = {
-		Function = function(...: any)
-			self.Connections = Sift.Dictionary.removeKey(self.Connections, name)
-			
-			if functionToConnect then
-				functionToConnect(...)
-			end
-
+	self.Connections[connectionName] = {
+		Function = function()
+			self:Disconnect(connectionName)
 			coroutine.resume(thread)
 		end,
 		Thread = thread
-	} :: Connection
-
+	}
 	coroutine.yield()
 end
 
-function Communicator.Disconnect(self: Communicator, name: string): ()
+function Communicator.Disconnect(self: Communicator, connectionName: string): ()
 	local connections: { [string]: Connection } = self.Connections
-	local connection: Connection? = connections[name]
+	
+	local connection: Connection? = connections[connectionName]
 	if not connection then
 		return
 	end
-	self.Connections[name] = nil
+	connections[connectionName] = nil
 
 	local thread: thread? = connection.Thread
 	if thread then
@@ -95,57 +85,41 @@ function Communicator.Disconnect(self: Communicator, name: string): ()
 	end
 end
 
---// MODULE FUNCTIONS
-function Module.new(player: Player): Communicator
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	
-	local existingCommunicator: Communicator? = tempData.MoveCommunicator :: Communicator?
-	if existingCommunicator then
-		error(`Player {player} already has MoveCommunicator`)
+function Communicator.DisconnectAll(self: Communicator): ()
+	for connectionName, _ in pairs(self.Connections) do
+		self:Disconnect(connectionName)
 	end
-
-	local communicator: Communicator = setmetatable({
-		Player = player,
-		Connections = {},
-	}, Communicator)
-
-	tempData = Sift.Dictionary.set(tempData, "MoveCommunicator", communicator)
-	DataStore.UpdateTemporaryData(player, tempData)
-
-	return communicator
 end
 
-function Module.Destroy(player: Player): ()
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	
-	local communicator: Communicator? = tempData.MoveCommunicator :: Communicator?
-	if not communicator then
-		error(`Player {player} doesn't have MoveCommunicator`)
-	end
-
-	tempData = Sift.Dictionary.removeKey(tempData, "MoveCommunicator")
-	DataStore.UpdateTemporaryData(player, tempData)
+--// MODULE FUNCTIONS
+function Module.new(player: Player): Communicator
+	return setmetatable({
+		Player = player,
+		Connections = {}
+	}, Communicator)
 end
 
 --// EVENT
-MoveCommunication.listen(function(data, player: Player?)
+RemoteEvent.listen(function(data, player: Player?)
 	if not player then
 		return
 	end
 
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local communicator: Communicator? = tempData.MoveCommunicator
-	if not communicator then
-		return
+	local moveset: Types.Moveset = movesetAtom()[player]
+	if not moveset then
+		error(`Player {player} doesn't have a moveset`)
 	end
 
+	local communicator: Communicator = moveset.Communicator
+	local connections: { [string]: Connection } = communicator.Connections
+
 	local connectionName: string = data.ConnectionName
-	local connection: Connection = communicator.Connections[connectionName]
+	local connection: Connection = connections[connectionName]
 	if not connection then
 		repeat
 			task.wait()
-			connection = communicator.Connections[connectionName]
-		until connection or player.Parent ~= Players
+			connection = connections[connectionName]
+		until connection or not movesetAtom()[player]
 	end
 
 	connection.Function(data.Data)
