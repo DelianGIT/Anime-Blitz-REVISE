@@ -36,7 +36,7 @@ export type Moves = { [string]: Move }
 
 --// VARIABLES
 local movesetsFolder: Folder = ServerScriptService.Movesets
-local sharedMovesDataFolder: Folder = ReplicatedStorage.MovesData
+local sharedMovesetsDataFolder: Folder = ReplicatedStorage.SharedMovesetsData
 
 local Module: { [string]: Moves } = {}
 
@@ -48,7 +48,7 @@ for _, folder in ipairs(movesetsFolder:GetChildren()) do
 	local moveset: Moves = {}
 
 	local movesetName: string = folder.Name
-	local sharedMovesData: ModuleScript? = sharedMovesDataFolder:FindFirstChild(movesetName) :: ModuleScript?
+	local sharedMovesData: ModuleScript? = sharedMovesetsDataFolder:FindFirstChild(movesetName) :: ModuleScript?
 	if sharedMovesData then
 		sharedMovesData = require(sharedMovesData) :: any
 	end

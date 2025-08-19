@@ -9,7 +9,7 @@ local Sift = require(Packages.Sift)
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local DataStore = require(ServerModules.DataStore)
+local PlayerData = require(ServerModules.PlayerData)
 
 local Controller = require(script.Controller)
 local Storage = require(script.Storage)
@@ -27,13 +27,14 @@ type Moveset = {
 }
 
 --// VARIABLES
+local movesetAtom = PlayerData.Atoms.Moveset
+
 local Module = {}
 
 --// MODULE FUNCTIONS
 function Module.Give(player: Player, name: string): ()
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-
-	if tempData.Moveset then
+	local moveset: Moveset? = movesetAtom()[player] :: Moveset?
+	if moveset then
 		warn(`Player {player.Name} already has moveset {name}`)
 		return
 	end
@@ -58,18 +59,18 @@ function Module.Give(player: Player, name: string): ()
 		end
 	end
 
-	tempData = Sift.Dictionary.set(tempData, "Moveset", {
+	local state = movesetAtom()
+	state = Sift.Dictionary.set(state, player, {
 		Name = name,
 		Moves = moves
 	})
-	DataStore.UpdateTemporaryData(player, tempData)
+	movesetAtom(state :: any)
 
 	Give.sendTo(name, player)
 end
 
 function Module.TakeMoveset(player: Player): ()
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local moveset: Moveset? = tempData.Moveset :: any
+	local moveset: Moveset? = movesetAtom()[player] :: Moveset?
 	if not moveset then
 		warn(`Player {player.Name} doesn't have moveset`)
 		return
@@ -79,8 +80,9 @@ function Module.TakeMoveset(player: Player): ()
 
 	Cooldown.RemoveAll(player)
 
-	tempData = Sift.Dictionary.removeKey(tempData, "Moveset")
-	DataStore.UpdateTemporaryData(player, tempData)
+	local state = movesetAtom()
+	state = Sift.Dictionary.removeKey(state, player)
+	movesetAtom(state)
 
 	Take.sendTo(nil, player)
 end

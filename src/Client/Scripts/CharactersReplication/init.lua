@@ -47,6 +47,9 @@ local lastSent: number = os.clock()
 
 local localCharacter: Model?
 
+--// INITIALIZING RENDER CACHE
+RenderCache.Init(playerTickRates, InterpolationBuffer)
+
 --// FUNCTIONS
 local function addCharacter(character: Model, id: number): ()
 	if addedCharacters[id] then
@@ -55,6 +58,7 @@ local function addCharacter(character: Model, id: number): ()
 	end
 
 	local humanoidRootPart: Part = character:WaitForChild("HumanoidRootPart") :: Part
+	humanoidRootPart.Anchored = false
 
 	local initalCFrame: CFrame = humanoidRootPart.CFrame
 	local snapshot: Snapshot.Snapshot = Snapshot.new()

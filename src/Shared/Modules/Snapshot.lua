@@ -63,7 +63,7 @@ function Snapshot.Push(self: Snapshot, timestamp: number, value: CFrame): ()
 				currentValue = snapshotEntry :: Data
 			end
 
-			nextIndex = nextIndex
+			nextIndex = (nextIndex - 1) % MAX_LENGTH
 		end
 	end
 end

@@ -99,7 +99,7 @@ function Module.Build(player: Player): ()
 		newCharacter, humanoid = buildDefaultCharacter(player, spawnCFrame)
 	else
 		newCharacter, humanoid = buildCustomCharacter(characterData.Name, player, spawnCFrame)
-		applyStats(humanoid, characterData.Stats)
+		applyStats(humanoid, characterData.Properties)
 	end
 
 	characterAtom(function(state: { [Player]: Model })

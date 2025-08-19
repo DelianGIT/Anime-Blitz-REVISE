@@ -26,7 +26,7 @@ local Module: { Player } = {}
 RemoteEvent.listen(function(_, player: Player?)
 	if player then
 		loadedAtom(function(state: { [Player]: boolean })
-			return Sift.Set.add(state)
+			return Sift.Set.add(state, player)
 		end)
 
 		CharacterController.Build(player)

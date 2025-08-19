@@ -1,5 +1,6 @@
 --!strict
 --// SERVICES
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -118,6 +119,17 @@ local function addExistingCharacters(player: Player, id: number): ()
 end
 
 local function addCharacter(player: Player, character: Model, id: number): ()
+	local humanoidRootPart: BasePart = (character :: any).HumanoidRootPart
+	if humanoidRootPart:GetNetworkOwner() ~= player then
+		repeat
+			task.wait()
+		until humanoidRootPart:GetNetworkOwner() == player or player.Parent ~= Players
+		if player.Parent ~= Players then 
+			return
+		end
+	end
+	humanoidRootPart.Anchored = true
+
 	local replicator: Model
 	local characterData = characterDataAtom()[player]
 	if characterData then
