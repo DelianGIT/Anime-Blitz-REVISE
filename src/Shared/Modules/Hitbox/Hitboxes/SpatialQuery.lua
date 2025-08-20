@@ -127,7 +127,7 @@ function Hitbox.GetHits(self: Hitbox): Hits
 	return BaseFunctions.SpatialQuery(cframe, size, self.RequestParams)
 end
 
-function Hitbox.Enable(self: Hitbox, duration: number?, yieldTillHitted: number?, disableOnHit: boolean?): ()
+function Hitbox.Enable(self: Hitbox, duration: number?, yieldTillHitted: number?): ()
 	isDestroyed(self)
 
 	if self.Id then

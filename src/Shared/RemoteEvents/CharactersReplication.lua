@@ -50,5 +50,11 @@ return ByteNet.defineNamespace("CharactersReplication", function()
 			})
 		}),
 
+		TogglePlayerReplication = ByteNet.definePacket({
+			value = ByteNet.struct({
+				Id = ByteNet.uint8,
+				Toggle = ByteNet.bool
+			})
+		})
 	}
 end)

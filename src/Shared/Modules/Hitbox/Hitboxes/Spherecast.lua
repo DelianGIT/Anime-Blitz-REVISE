@@ -151,7 +151,7 @@ function Hitbox.GetHit(self: Hitbox): CustomRaycastResult?
 	return BaseFunctions.Spherecast(origin, radius, direction, self.RequestParams)
 end
 
-function Hitbox.Enable(self: Hitbox, duration: number?, yieldTillHitted: number?, disableOnHit: boolean?): ()
+function Hitbox.Enable(self: Hitbox, duration: number?, yieldTillHitted: number?): ()
 	isDestroyed(self)
 
 	if self.Id then

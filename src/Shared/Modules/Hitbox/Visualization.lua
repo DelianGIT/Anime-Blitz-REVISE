@@ -51,7 +51,7 @@ function Module.Raycast(origin: Vector3, direction: Vector3, show: boolean?): ()
 	local visualization: Part =
 		makePart(Vector3.new(0.5, 0.5, direction.Magnitude), CFrame.lookAlong(origin + direction / 2, direction))
 	if isEnabled(show) then
-		showVisualization(visualization, show)
+		showVisualization(visualization)
 	end
 end
 
@@ -61,21 +61,21 @@ function Module.Spherecast(origin: Vector3, direction: Vector3, radius: number, 
 		CFrame.lookAlong(origin + direction / 2, direction) * xAngles90
 	)
 	if isEnabled(show) then
-		showVisualization(visualization, show)
+		showVisualization(visualization)
 	end
 end
 
 function Module.SpatialQuery(cframe: CFrame, size: Vector3, show: boolean?): ()
 	local visualization: Part = makePart(size, cframe)
 	if isEnabled(show) then
-		showVisualization(visualization, show)
+		showVisualization(visualization)
 	end
 end
 
 function Module.PreciseSpatialQuery(part: BasePart, show: boolean?): ()
 	local visualization: Part = makePart(part.Size, part.CFrame)
 	if isEnabled(show) then
-		showVisualization(visualization, show)
+		showVisualization(visualization)
 	end
 end
 

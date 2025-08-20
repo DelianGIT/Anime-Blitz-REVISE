@@ -100,8 +100,9 @@ local overlapParamsStorage: { [Target]: OverlapParams } = {
 local Module = {}
 
 --// FUNCTIONS
+local getCharacterFromInstance: (instance: Instance) -> Model?
 if RunService:IsServer() then
-	function getCharacterFromInstance(instance: Instance): Model?
+	getCharacterFromInstance = function(instance: Instance): Model?
 		local character: Instance = instance
 		local parent: Instance = instance.Parent :: Instance
 
@@ -119,7 +120,7 @@ if RunService:IsServer() then
 		end
 	end
 else
-	function getCharacterFromInstance(instance: Instance): Model?
+	getCharacterFromInstance = function(instance: Instance): Model?
 		local character: Instance = instance
 		local parent: Instance = instance.Parent :: Instance
 
@@ -158,7 +159,7 @@ end
 
 local function filterHits(hits: Hits, blacklist: { Instance }): Hits
 	local filteredHits: Hits = {}
-	for index, hit in ipairs(hits) do
+	for _, hit in ipairs(hits) do
 		table.insert(filteredHits, filterHit(hit, blacklist))
 	end
 	return filteredHits

@@ -122,7 +122,7 @@ function Hitbox.GetHits(self: Hitbox): Hits
 	return BaseFunctions.PreciseSpatialQuery(geometry, self.RequestParams)
 end
 
-function Hitbox.Enable(self: Hitbox, duration: number?, yieldTillHitted: number?, disableOnHit: boolean?): ()
+function Hitbox.Enable(self: Hitbox, duration: number?, yieldTillHitted: number?): ()
 	isDestroyed(self)
 
 	if self.Id then

@@ -1,4 +1,10 @@
 --!strict
+--// SERVICES
+local ServerScriptService = game:GetService("ServerScriptService")
+
+--// MODULES
+local ServerModules = ServerScriptService.Modules
+
 --// FUNCTIONS
 local function requireScripts(folder: Folder | Script): ()
 	for _, module: Instance in ipairs(folder:GetChildren()) do
@@ -26,5 +32,8 @@ end
 
 --// REQUIRING SCRIPTS
 requireScripts(script)
+
+--// ENABLING CUSTOM REPLICATION
+require(ServerModules.CharactersReplicator)
 
 print("Server loaded")

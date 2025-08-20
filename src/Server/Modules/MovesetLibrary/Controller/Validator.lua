@@ -4,11 +4,15 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 --// MODULES
 local ServerModules = ServerScriptService.Modules
-local DataStore = require(ServerModules.DataStore)
+local PlayerData = require(ServerModules.PlayerData)
 
 local Cooldown = require(script.Parent.Cooldown)
 
 --// VARIABLES
+local movesetAtom = PlayerData.Atoms.Moveset
+local activeMoveAtom = PlayerData.Atoms.ActiveMove
+local stunAtom = PlayerData.Atoms.Stun
+
 local Module = {}
 
 --// MODULE FUNCTIONS
@@ -31,16 +35,15 @@ function Module.Start(player: Player, moveName: string): (boolean, string?)
 		return false, "Character is dead"
 	end
 
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	if tempData.ActiveMove then
+	if activeMoveAtom()[player] then
 		return false, "Casting another move"
 	end
 
-	if tempData.Stun then
+	if stunAtom()[player] then
 		return false, "Stunned"
 	end
 
-	local moveset = tempData.Moveset
+	local moveset = movesetAtom()[player]
 	if not moveset then
 		return false, "Doesn't have the moveset"
 	end
@@ -76,8 +79,7 @@ function Module.End(player: Player, moveName: string?): (boolean, string?)
 		return false, "Character is dead"
 	end
 
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local activeMove = tempData.ActiveMove
+	local activeMove = activeMoveAtom()[player]
 	if not activeMove then
 		return false, "Not casting the move"
 	end
@@ -88,11 +90,11 @@ function Module.End(player: Player, moveName: string?): (boolean, string?)
 		return false, "Already requested end"
 	end
 
-	if tempData.Stun then
+	if stunAtom()[player] then
 		return false, "Stunned"
 	end
 
-	local moveset = tempData.Moveset
+	local moveset = movesetAtom()[player]
 	if not moveset then
 		return false, "Doesn't have the moveset"
 	end
@@ -106,12 +108,11 @@ function Module.End(player: Player, moveName: string?): (boolean, string?)
 		return false, "Doesn't have an end function"
 	end
 
-	activeMove.RequestedEnd = true :: any
+	activeMove.RequestedEnd = true
 	if activeMove.State ~= "ReadyToEnd" then
 		repeat
 			task.wait()
-			tempData = DataStore.GetTemporaryData(player)
-			activeMove = tempData.ActiveMove
+			activeMove = activeMoveAtom()[player]
 		until not activeMove or activeMove.State == "ReadyToEnd"
 
 		if not activeMove then
@@ -123,8 +124,7 @@ function Module.End(player: Player, moveName: string?): (boolean, string?)
 end
 
 function Module.Cancel(player: Player): (boolean, string?)
-	local tempData: DataStore.TemporaryData = DataStore.GetTemporaryData(player)
-	local activeMove = tempData.ActiveMove
+	local activeMove = activeMoveAtom()[player]
 	if not activeMove then
 		return false, "Not casting the move"
 	end
@@ -133,7 +133,7 @@ function Module.Cancel(player: Player): (boolean, string?)
 		return false, "Already cancelling"
 	end
 
-	local moveset = tempData.Moveset
+	local moveset = movesetAtom()[player]
 	if not moveset then
 		return false, "Doesn't have the moveset"
 	end

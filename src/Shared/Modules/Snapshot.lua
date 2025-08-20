@@ -1,11 +1,14 @@
 --!strict
---// SERVICES
-
 --// TYPES
 export type Data = {
 	Timestamp: number,
-	Value: CFrame,
+	Value: CFrame
 }
+
+--// CONSTANTS
+local MAX_LENGTH = 30
+local MAX_T = 256
+local HALF_T = MAX_T // 2
 
 --// CLASS
 local Snapshot = {}
@@ -13,23 +16,17 @@ Snapshot.__index = Snapshot
 
 type SnapshotData = {
 	Cache: { Data },
-	PivotIndex: number?,
+	PivotIndex: number?
 }
 export type Snapshot = setmetatable<SnapshotData, typeof(Snapshot)>
 
---// TYPES
-local MAX_LENGTH = 30
-local MAX_T = 256
-
 --// VARIABLES
-local halfT: number = MAX_T // 2
-
 local Module = {}
 
 --// FUNCTIONS
 local function isGreater(t1: number, t2: number): boolean
 	local delta: number = (t2 - t1) % MAX_T
-	return delta > 0 and delta <= halfT
+	return delta > 0 and delta <= HALF_T
 end
 
 --// CLASS FUNCTIONS
@@ -47,24 +44,25 @@ function Snapshot.Push(self: Snapshot, timestamp: number, value: CFrame): ()
 		return
 	end
 
-	local pivotTimestamp: number = cache[pivotIndex + 1].Timestamp
-	if isGreater(pivotTimestamp, timestamp) then
+	local pivotValue: number = cache[pivotIndex + 1].Timestamp
+	if isGreater(pivotValue, timestamp) then
 		local nextIndex: number = (pivotIndex + 1) % MAX_LENGTH
 		cache[nextIndex + 1] = data
 		self.PivotIndex = nextIndex
-	else
-		local nextIndex: number = (pivotIndex - 1) % MAX_LENGTH
-		local currentValue: Data? = data
+		return
+	end
 
-		while nextIndex ~= pivotIndex and currentValue ~= nil do
-			local snapshotEntry: Data? = cache[nextIndex + 1]
-			if not snapshotEntry or isGreater(snapshotEntry.Timestamp, currentValue.Timestamp) then
-				cache[nextIndex + 1] = currentValue
-				currentValue = snapshotEntry :: Data
-			end
+	local nextIndex: number = (pivotIndex - 1) % MAX_LENGTH
+	local currentValue: Data = data
 
-			nextIndex = (nextIndex - 1) % MAX_LENGTH
+	while nextIndex ~= pivotIndex and currentValue do
+		local snapshotEntry: Data? = cache[nextIndex + 1]
+		if not snapshotEntry or isGreater(snapshotEntry.Timestamp, currentValue.Timestamp) then
+			cache[nextIndex + 1] = currentValue
+			currentValue = snapshotEntry :: Data
 		end
+
+		nextIndex = (nextIndex - 1) % MAX_LENGTH
 	end
 end
 
@@ -87,13 +85,13 @@ function Snapshot.GetBefore(self: Snapshot, before: number): Data?
 	local currentIndex: number = pivotIndex
 
 	repeat
-		local data: Data? = cache[currentIndex + 1]
-		if not data then
+		local value: Data? = cache[currentIndex + 1]
+		if not value then
 			return nil
 		end
 
-		if isGreater(data.Timestamp, before) then
-			return data
+		if isGreater(value.Timestamp, before) then
+			return value
 		end
 
 		currentIndex = (currentIndex - 1) % MAX_LENGTH
@@ -108,18 +106,18 @@ function Snapshot.GetAfter(self: Snapshot, after: number): Data?
 		return nil
 	end
 
-	local cache: { Data } = self.Cache
 	local currentIndex: number = (pivotIndex + 1) % MAX_LENGTH
-	local maxIndex: number = currentIndex
+	local cache: { Data } = self.Cache
 
 	repeat
-		local data: Data? = cache[currentIndex + 1]
-		if data and isGreater(after, data.Timestamp) then
-			return data
+		local value = cache[currentIndex + 1]
+
+		if value and isGreater(after, value.Timestamp) then
+			return value
 		end
 
 		currentIndex = (currentIndex + 1) % MAX_LENGTH
-	until currentIndex == maxIndex
+	until currentIndex == (pivotIndex + 1) % MAX_LENGTH
 
 	return nil
 end
@@ -143,32 +141,39 @@ function Snapshot.GetAt(self: Snapshot, at: number): CFrame?
 			return before.Value
 		end
 
-		local beforeTimestamp: number = before.Timestamp
-		local afterTimestamp: number = after.Timestamp
-		if beforeTimestamp > afterTimestamp then
-			afterTimestamp += 256
+		local beforeTime: number = before.Timestamp
+		local afterTime: number = after.Timestamp
+		if beforeTime > afterTime then
+			afterTime += 256
 		end
 
-		if beforeTimestamp > at then
+		if beforeTime > at then
 			at += 256
 		end
 
-		local alpha: number = math.map(at, beforeTimestamp, afterTimestamp, 0, 1)
+		local alpha: number = math.map(at, beforeTime, afterTime, 0, 1)
 		return before.Value:Lerp(after.Value, alpha)
 	elseif before then
+		warn("Tried to fetch a time that was ahead of snapshot storage!")
 		return before.Value
 	elseif after then
+		warn("Tried to fetch a time that was behind  snapshot storage!")
 		return after.Value
-	else
-		return nil
 	end
+
+	return nil
+end
+
+function Snapshot.Clear(self: Snapshot): ()
+	self.Cache = {}
+	self.PivotIndex = nil
 end
 
 --// MODULE FUNCTIONS
 function Module.new(): Snapshot
 	return setmetatable({
-		Cache = {},
-	}, Snapshot) :: Snapshot
+		Cache = {}
+	} :: SnapshotData, Snapshot)
 end
 
 return Module

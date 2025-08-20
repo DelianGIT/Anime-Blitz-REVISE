@@ -3,37 +3,44 @@
 local RenderCache = require(script.Parent.RenderCache)
 
 --// TYPES
-type Data = {
+type LatencyData = {
 	AverageLatency: number,
 	Deviation: number,
 	LastLatency: number?
 }
 
 --// CONSTANTS
+local FIX = 0.2
+local ALPHA = 0.1
+local RECOVERY = 0.5
+
 local MIN_BUFFER = 0.09
 local MAX_BUFFER = 0.5
-local FIX = 0.2
-local RECOVERY = 0.5
-local ALPHA = 0.1
 
 --// VARIABLES
-local playerLatencies: { [number]: Data } = {}
+local playerLatencies: { [number]: LatencyData } = {}
 local Module = {}
 
 --// MODULE FUNCTIONS
 function Module.RegisterPacket(networkId: number, serverTime: number): ()
 	local clientNow: number = RenderCache.GetEstimatedServerTime(networkId)
+
 	local latency: number = clientNow - serverTime
 	if latency > 1 then
-		playerLatencies[networkId] = nil
+		playerLatencies[networkId] = {
+			AverageLatency = latency,
+			Deviation = 0,
+			LastLatency = latency
+		}
 
 		RenderCache.Remove(networkId)
 		RenderCache.Add(networkId)
 
-		warn(`{networkId} latency too high, cleared cache to repredict in case of error:! {latency}`)
+		warn(`{networkId} latency too high, cleared cache to repredict in case of error: {latency}!`)
+		return
 	end
 
-	local data: Data? = playerLatencies[networkId]
+	local data: LatencyData? = playerLatencies[networkId]
 	if not data then
 		playerLatencies[networkId] = {
 			AverageLatency = latency,
@@ -46,15 +53,15 @@ function Module.RegisterPacket(networkId: number, serverTime: number): ()
 	local lastLatency: number? = data.LastLatency
 	if lastLatency then
 		local delta: number = math.abs(latency - lastLatency)
-		data.Deviation = data.Deviation * (1 - FIX) + delta * FIX
+		data.Deviation *= (1 - FIX) + delta * FIX
 	end
 
-	data.AverageLatency = data.AverageLatency * (1 - ALPHA) + latency * ALPHA
+	data.AverageLatency *= (1 - ALPHA) + latency * ALPHA
 	data.LastLatency = latency
 end
 
 function Module.GetBuffer(networkId: number, tickRate: number): number
-	local data: Data? = playerLatencies[networkId]
+	local data: LatencyData? = playerLatencies[networkId]
 	if not data then
 		return MIN_BUFFER
 	end
@@ -62,9 +69,9 @@ function Module.GetBuffer(networkId: number, tickRate: number): number
 	local recoveryMargin: number = tickRate * RECOVERY
 	local rawBuffer: number = data.AverageLatency + data.Deviation + recoveryMargin
 
-	local _buffer: number
+	local _buffer
 	if rawBuffer < MIN_BUFFER then
-		_buffer = MIN_BUFFER + (MIN_BUFFER - rawBuffer)
+		_buffer = MIN_BUFFER + (MIN_BUFFER - rawBuffer) * 0.2
 	else
 		_buffer = rawBuffer
 	end

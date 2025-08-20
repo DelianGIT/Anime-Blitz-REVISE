@@ -6,9 +6,7 @@ return {
 		Level = 0,
 		Experience = 0
 	},
-
-	MoveCooldowns = {},
-
+	
 	Perks = {},
 
 	HumanoidChanges = {},

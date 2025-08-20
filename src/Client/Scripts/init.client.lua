@@ -69,6 +69,9 @@ requireFolder(script)
 --// SYNCING SHARED PLAYER DATA
 require(ClientModules.SharedPlayerData)
 
+--// ENABLING CUSTOM REPLICATION
+require(ClientModules.CharactersReplicator)
+
 RemoteEvent.send()
 
 print("Client loaded")
